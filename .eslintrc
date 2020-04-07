@@ -11,5 +11,17 @@
     "jest": true,
     "node": true
   },
-  "parser": "@typescript-eslint/parser"
+  "rules": {
+    "node/no-missing-import": "off",
+    "node/no-unsupported-features/es-syntax": "off",
+    "no-process-exit": "off"
+  },
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaVersion": 6,
+    "sourceType": "module",
+    "ecmaFeatures": {
+      "modules": true
+    }
+  }
 }
