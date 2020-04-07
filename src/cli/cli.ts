@@ -8,8 +8,12 @@ export const runCLI = (): void => {
   const args = process.argv.slice(2);
 
   if (args.length === 0) {
+    process.env.IS_INTERACTIVE = 'true';
+
     runPrompt();
   } else if (args.length === 1) {
+    process.env.IS_INTERACTIVE = 'false';
+
     const filePath = resolve(args[0]);
 
     if (extname(filePath) !== '.mad') {

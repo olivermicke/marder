@@ -25,5 +25,5 @@ export const throwCLIError = (error: CLIErrors): void => {
       break;
   }
 
-  reportError(errorMessage, exitCode);
+  reportError(errorMessage);
 };
