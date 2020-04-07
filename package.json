@@ -1,0 +1,26 @@
+{
+  "name": "own-lang",
+  "version": "0.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/olivermicke/own-lang.git",
+  "author": "Oliver Micke <olivermicke@outlook.com>",
+  "license": "MIT",
+  "scripts": {
+    "start": "tsc && node dist/index.js",
+    "lint": "eslint src/**",
+    "test": "jest src/**"
+  },
+  "devDependencies": {
+    "@types/jest": "^25.2.1",
+    "@types/node": "^13.11.0",
+    "@typescript-eslint/eslint-plugin": "^2.27.0",
+    "@typescript-eslint/parser": "^2.27.0",
+    "eslint": "^6.8.0",
+    "eslint-config-prettier": "^6.10.1",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-prettier": "^3.1.2",
+    "jest": "^25.2.7",
+    "prettier": "^2.0.4",
+    "typescript": "^3.8.3"
+  }
+}
