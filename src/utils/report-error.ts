@@ -1,4 +1,4 @@
-type Line = {
+export type Line = {
   number: number;
   string: string;
 };

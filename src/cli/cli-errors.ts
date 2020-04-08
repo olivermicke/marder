@@ -7,7 +7,6 @@ type CLIErrors =
   | { type: 'TOO_MANY_ARGS' };
 
 export const throwCLIError = (error: CLIErrors): void => {
-  const exitCode = 1;
   let errorMessage: string;
 
   switch (error.type) {
