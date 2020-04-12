@@ -1,7 +1,7 @@
 import { extname, resolve } from 'path';
 
 import { throwCLIError } from './cli-errors';
-import { compile } from '../compiler/compiler';
+import { runInterpreter } from '../interpreter';
 import { runPrompt } from '../prompt/prompt';
 
 export const runCLI = (): void => {
@@ -21,7 +21,7 @@ export const runCLI = (): void => {
     }
 
     try {
-      compile(args[0]);
+      runInterpreter(args[0]);
     } catch (error) {
       switch (error.code) {
         case 'EACCES': {

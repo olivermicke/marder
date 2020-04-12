@@ -1,8 +1,8 @@
 import readline from 'readline';
 
-import { printAST } from '../compiler/parser/ast-printer';
-import { Parser } from '../compiler/parser/parser';
-import { Scanner } from '../compiler/scanner/scanner';
+import { interpret } from '../interpreter/interpreter';
+import { Parser } from '../interpreter/parser/parser';
+import { Scanner } from '../interpreter/scanner/scanner';
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -17,7 +17,8 @@ const read = (): void => {
 
     try {
       const tokens = new Scanner(input).scanTokens();
-      console.log(printAST(new Parser(tokens).parse()));
+      const statements = new Parser(tokens).parse();
+      interpret(statements);
     } catch (e) {
       console.log(e);
     }

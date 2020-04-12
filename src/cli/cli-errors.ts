@@ -11,16 +11,16 @@ export const throwCLIError = (error: CLIErrors): void => {
 
   switch (error.type) {
     case 'FILE_MISSING_PERMISSIONS':
-      errorMessage = `Unauthorized to read file at path ${error.filePath}.`;
+      errorMessage = `Unauthorized to read file at path ${error.filePath}`;
       break;
     case 'FILE_NOT_FOUND':
-      errorMessage = `File not found at ${error.filePath}.`;
+      errorMessage = `File not found at ${error.filePath}`;
       break;
     case 'INVALID_FILE_EXTENSION':
-      errorMessage = "Wrong file extension. Expected '.mad'.";
+      errorMessage = "Wrong file extension. Expected '.mad'";
       break;
     case 'TOO_MANY_ARGS':
-      errorMessage = 'Invalid number of arguments.';
+      errorMessage = 'Invalid number of arguments';
       break;
   }
 

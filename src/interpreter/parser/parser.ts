@@ -1,7 +1,9 @@
 import { reportError } from '../../utils/report-error';
 
-import { Expr, LiteralExpr, GroupingExpr } from './types';
+import { Expr, ExpressionStmt, PrintStmt, Stmt, VarStmt } from './types';
 import { Token, TokenType } from '../scanner/types';
+
+const EXPECTED_SEMICOLON = 'Expected ";" after expression';
 
 export class Parser {
   private tokens: Token[];
@@ -12,16 +14,23 @@ export class Parser {
     this.tokens = tokens;
   }
 
-  public parse = (): Expr | null => {
-    const { expression } = this;
-
+  public parse = (): Stmt[] | null => {
     try {
-      return expression();
+      const { declaration, isAtEnd } = this;
+
+      const statements: Stmt[] = [];
+
+      while (!isAtEnd()) {
+        statements.push(declaration());
+      }
+
+      return statements;
     } catch (_error) {
       return null;
     }
   };
 
+  // Helpers
   private advance = (): Token => {
     const { isAtEnd, previous } = this;
 
@@ -53,7 +62,7 @@ export class Parser {
 
   private error = (token: Token, message: string): void => {
     if (token.type === 'EOF') {
-      reportError(`${message} at end of file.`);
+      reportError(`${message} at end of file.`, null);
     } else {
       reportError(message, { number: token.line, string: `at token "${token.lexeme}"` });
     }
@@ -68,7 +77,7 @@ export class Parser {
   private match = (...types: TokenType[]): boolean => {
     const { advance, check } = this;
 
-    for (let type of types) {
+    for (const type of types) {
       if (check(type)) {
         advance();
         return true;
@@ -86,6 +95,13 @@ export class Parser {
     return this.tokens[this.current - 1];
   };
 
+  // Expressions
+  private expression = (): Expr => {
+    const { equality } = this;
+
+    return equality();
+  };
+
   private addition = (): Expr => {
     const { match, multiplication, previous } = this;
 
@@ -95,7 +111,7 @@ export class Parser {
       const operator: Token = previous();
       const right: Expr = multiplication();
       expr = {
-        __kind: 'binary',
+        __kind: 'binaryExpr',
         left: expr,
         operator,
         right,
@@ -110,10 +126,10 @@ export class Parser {
 
     let expr: Expr = addition();
 
-    while (match('GREATER', 'GREATER_EQUAL', 'LESS', 'LESS_EQUAL')) {
+    while (match('AND', 'GREATER', 'GREATER_EQUAL', 'LESS', 'LESS_EQUAL', 'OR')) {
       const operator: Token = previous();
       const right: Expr = addition();
-      expr = { __kind: 'binary', left: expr, operator, right };
+      expr = { __kind: 'binaryExpr', left: expr, operator, right };
     }
 
     return expr;
@@ -127,16 +143,10 @@ export class Parser {
     while (match('BANG_EQUAL', 'EQUAL_EQUAL')) {
       const operator: Token = previous();
       const right: Expr = comparison();
-      expr = { __kind: 'binary', left: expr, operator, right };
+      expr = { __kind: 'binaryExpr', left: expr, operator, right };
     }
 
     return expr;
-  };
-
-  private expression = (): Expr => {
-    const { equality } = this;
-
-    return equality();
   };
 
   private multiplication = (): Expr => {
@@ -148,7 +158,7 @@ export class Parser {
       const operator: Token = previous();
       const right: Expr = unary();
       expr = {
-        __kind: 'binary',
+        __kind: 'binaryExpr',
         left: expr,
         operator,
         right,
@@ -158,40 +168,47 @@ export class Parser {
     return expr;
   };
 
-  private primary = (): GroupingExpr | LiteralExpr | never => {
+  private primary = (): Expr | never => {
     const { consume, error, expression, match, peek, previous } = this;
 
     if (match('FALSE')) {
       return {
-        __kind: 'literal',
+        __kind: 'literalExpr',
         value: 'false',
       };
     }
     if (match('TRUE')) {
       return {
-        __kind: 'literal',
+        __kind: 'literalExpr',
         value: 'true',
       };
     }
     if (match('NIL')) {
       return {
-        __kind: 'literal',
+        __kind: 'literalExpr',
         value: 'nil',
       };
     }
 
     if (match('NUMBER', 'STRING')) {
       return {
-        __kind: 'literal',
+        __kind: 'literalExpr',
         value: previous().literal,
+      };
+    }
+
+    if (match('IDENTIFIER')) {
+      return {
+        __kind: 'variableExpr',
+        name: previous(),
       };
     }
 
     if (match('LEFT_PAREN')) {
       const expr: Expr = expression();
-      consume('RIGHT_PAREN', 'Expected ")" after expression.');
+      consume('RIGHT_PAREN', 'Expected ")" after expression');
       return {
-        __kind: 'grouping',
+        __kind: 'groupingExpr',
         expression: expr,
       };
     }
@@ -206,12 +223,77 @@ export class Parser {
       const operator: Token = previous();
       const right: Expr = unary();
       return {
-        __kind: 'unary',
+        __kind: 'unaryExpr',
         operator,
         right,
       };
     }
 
     return primary();
+  };
+
+  // Statements
+  private statement = (): Stmt => {
+    const { expressionStatement, match, printStatement } = this;
+
+    if (match('PRINT')) {
+      return printStatement();
+    }
+
+    return expressionStatement();
+  };
+
+  private declaration = (): Stmt | null => {
+    const { match, statement, varDeclaration } = this;
+
+    if (match('VAR')) {
+      return varDeclaration();
+    }
+
+    return statement();
+  };
+
+  private expressionStatement = (): ExpressionStmt => {
+    const { consume, expression } = this;
+
+    const expr: Expr = expression();
+    consume('SEMICOLON', EXPECTED_SEMICOLON);
+
+    return {
+      __kind: 'expressionStmt',
+      expression: expr,
+    };
+  };
+
+  private printStatement = (): PrintStmt => {
+    const { consume, expression } = this;
+
+    const expr: Expr = expression();
+    consume('SEMICOLON', EXPECTED_SEMICOLON);
+
+    return {
+      __kind: 'printStmt',
+      expression: expr,
+    };
+  };
+
+  private varDeclaration = (): VarStmt => {
+    const { consume, expression, match } = this;
+
+    const name: Token = consume('IDENTIFIER', 'Expected variable name');
+
+    if (!match('EQUAL')) {
+      reportError('Expected assignment', { number: name.line, string: `Token: ${name.lexeme}` });
+    }
+
+    const initializer = expression();
+
+    consume('SEMICOLON', 'Expected ";" after variable declaration');
+
+    return {
+      __kind: 'varStmt',
+      initializer,
+      name,
+    };
   };
 }

@@ -1,5 +1,5 @@
 {
-  "name": "own-lang",
+  "name": "marder",
   "version": "0.0.0",
   "main": "index.js",
   "repository": "https://github.com/olivermicke/own-lang.git",
@@ -7,8 +7,10 @@
   "license": "MIT",
   "scripts": {
     "start": "tsc && node dist/index.js",
+    "build": "tsc -p tsconfig.production.json",
+    "mad": "node dist/index.js",
     "lint": "tsc --noEmit && eslint '*/**/*.ts'",
-    "test": "jest"
+    "test": "env IS_TEST=true jest"
   },
   "devDependencies": {
     "@types/jest": "^25.2.1",

@@ -16,7 +16,6 @@ export type Keyword =
   | 'var'
   | 'while';
 
-// TODO: "nil", "true", "false"?
 export type Literal = string | number | null;
 
 export type Token = {
