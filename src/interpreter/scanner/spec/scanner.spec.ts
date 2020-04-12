@@ -132,6 +132,8 @@ describe('scanner', () => {
       ${'for'}    | ${'FOR'}
       ${'func'}   | ${'FUNC'}
       ${'if'}     | ${'IF'}
+      ${'let'}    | ${'LET'}
+      ${'mut'}    | ${'MUT'}
       ${'nil'}    | ${'NIL'}
       ${'or'}     | ${'OR'}
       ${'print'}  | ${'PRINT'}
@@ -139,7 +141,6 @@ describe('scanner', () => {
       ${'super'}  | ${'SUPER'}
       ${'this'}   | ${'THIS'}
       ${'true'}   | ${'TRUE'}
-      ${'var'}    | ${'VAR'}
       ${'while'}  | ${'WHILE'}
     `('adds correct token for keyword $keyword', ({ keyword, type }) => {
       const [token] = new Scanner(keyword).scanTokens();

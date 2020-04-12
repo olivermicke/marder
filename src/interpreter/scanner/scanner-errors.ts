@@ -19,7 +19,7 @@ export const throwScannerError = (error: ScannerErrors): void => {
   const line: Line | null = error.lineNumber
     ? {
         number: error.lineNumber,
-        string: 'show line here. to be implemented.',
+        string: 'show line here. to be implemented',
       }
     : null;
 

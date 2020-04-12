@@ -5,9 +5,9 @@ describe('ast-printer', () => {
     describe('expressions', () => {
       test('binary expressions', () => {
         const result = printAST({
-          __kind: 'binary',
+          __kind: 'binaryExpr',
           left: {
-            __kind: 'literal',
+            __kind: 'literalExpr',
             value: 1,
           },
           operator: {
@@ -17,7 +17,7 @@ describe('ast-printer', () => {
             type: 'PLUS',
           },
           right: {
-            __kind: 'literal',
+            __kind: 'literalExpr',
             value: 2,
           },
         });
@@ -26,9 +26,9 @@ describe('ast-printer', () => {
 
       test('grouping expressions', () => {
         const result = printAST({
-          __kind: 'grouping',
+          __kind: 'groupingExpr',
           expression: {
-            __kind: 'literal',
+            __kind: 'literalExpr',
             value: 'foo',
           },
         });
@@ -43,7 +43,7 @@ describe('ast-printer', () => {
       `('literal expressions of type $type', ({ expected, value }) => {
         expect(
           printAST({
-            __kind: 'literal',
+            __kind: 'literalExpr',
             value,
           }),
         ).toBe(expected);
@@ -51,7 +51,7 @@ describe('ast-printer', () => {
 
       test('unary expressions', () => {
         const result = printAST({
-          __kind: 'unary',
+          __kind: 'unaryExpr',
           operator: {
             lexeme: '!',
             line: 1,
@@ -59,7 +59,7 @@ describe('ast-printer', () => {
             type: 'BANG',
           },
           right: {
-            __kind: 'literal',
+            __kind: 'literalExpr',
             value: 1,
           },
         });
@@ -68,9 +68,9 @@ describe('ast-printer', () => {
 
       test('integration: nested expressions', () => {
         const result = printAST({
-          __kind: 'binary',
+          __kind: 'binaryExpr',
           left: {
-            __kind: 'unary',
+            __kind: 'unaryExpr',
             operator: {
               lexeme: '-',
               line: 1,
@@ -78,9 +78,9 @@ describe('ast-printer', () => {
               type: 'MINUS',
             },
             right: {
-              __kind: 'binary',
+              __kind: 'binaryExpr',
               left: {
-                __kind: 'unary',
+                __kind: 'unaryExpr',
                 operator: {
                   lexeme: '!',
                   line: 1,
@@ -88,7 +88,7 @@ describe('ast-printer', () => {
                   type: 'BANG',
                 },
                 right: {
-                  __kind: 'literal',
+                  __kind: 'literalExpr',
                   value: 123,
                 },
               },
@@ -99,9 +99,9 @@ describe('ast-printer', () => {
                 type: 'EQUAL_EQUAL',
               },
               right: {
-                __kind: 'grouping',
+                __kind: 'groupingExpr',
                 expression: {
-                  __kind: 'literal',
+                  __kind: 'literalExpr',
                   value: 456,
                 },
               },
@@ -114,9 +114,9 @@ describe('ast-printer', () => {
             type: 'STAR',
           },
           right: {
-            __kind: 'grouping',
+            __kind: 'groupingExpr',
             expression: {
-              __kind: 'literal',
+              __kind: 'literalExpr',
               value: 45.67,
             },
           },
@@ -128,9 +128,9 @@ describe('ast-printer', () => {
 
   describe('utils', () => {
     test('"parenthesize" works correctly', () => {
-      expect(parenthesize('foo', { __kind: 'literal', value: 123 }, { __kind: 'literal', value: 'bar' })).toEqual(
-        '(foo 123 bar)',
-      );
+      expect(
+        parenthesize('foo', { __kind: 'literalExpr', value: 123 }, { __kind: 'literalExpr', value: 'bar' }),
+      ).toEqual('(foo 123 bar)');
     });
   });
 });

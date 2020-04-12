@@ -6,6 +6,8 @@ export type Keyword =
   | 'for'
   | 'func'
   | 'if'
+  | 'let'
+  | 'mut'
   | 'nil'
   | 'or'
   | 'print'
@@ -13,10 +15,8 @@ export type Keyword =
   | 'super'
   | 'this'
   | 'true'
-  | 'var'
   | 'while';
 
-// TODO: "nil", "true", "false"?
 export type Literal = string | number | null;
 
 export type Token = {
@@ -64,6 +64,8 @@ export type TokenType =
   | 'FUNC'
   | 'FOR'
   | 'IF'
+  | 'LET'
+  | 'MUT'
   | 'NIL'
   | 'OR'
   | 'PRINT'
@@ -71,6 +73,5 @@ export type TokenType =
   | 'SUPER'
   | 'THIS'
   | 'TRUE'
-  | 'VAR'
   | 'WHILE'
   | 'EOF';

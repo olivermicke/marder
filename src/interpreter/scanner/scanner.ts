@@ -14,6 +14,8 @@ const keywords: Record<Keyword, TokenType> = {
   for: 'FOR',
   func: 'FUNC',
   if: 'IF',
+  let: 'LET',
+  mut: 'MUT',
   nil: 'NIL',
   or: 'OR',
   print: 'PRINT',
@@ -21,7 +23,6 @@ const keywords: Record<Keyword, TokenType> = {
   super: 'SUPER',
   this: 'THIS',
   true: 'TRUE',
-  var: 'VAR',
   while: 'WHILE',
 };
 

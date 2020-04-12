@@ -1,14 +1,15 @@
 import { BinaryExpr, Expr, GroupingExpr, LiteralExpr, UnaryExpr } from './types';
 
 export const printAST = (expr: Expr): string => {
+  // eslint-disable-next-line
   switch (expr.__kind) {
-    case 'binary':
+    case 'binaryExpr':
       return printBinaryExpr(expr);
-    case 'grouping':
+    case 'groupingExpr':
       return printGroupingExpr(expr);
-    case 'literal':
+    case 'literalExpr':
       return printLiteralExpr(expr);
-    case 'unary':
+    case 'unaryExpr':
       return printUnaryExpr(expr);
   }
 };
