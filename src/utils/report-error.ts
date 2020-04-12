@@ -9,7 +9,6 @@ export const reportError = (message: string, line?: Line): void | never => {
   console.log(`Error: ${message}`);
 
   if (line && !isInteractive) {
-    console.log('\n');
     console.log(`[Line: ${line.number}]: ${line.string}`);
   }
 

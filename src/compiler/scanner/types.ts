@@ -16,12 +16,13 @@ export type Keyword =
   | 'var'
   | 'while';
 
-export type Literal = string | number;
+// TODO: "nil", "true", "false"?
+export type Literal = string | number | null;
 
 export type Token = {
   lexeme: string;
   line: number;
-  literal: Literal | null;
+  literal: Literal;
   type: TokenType;
 };
 

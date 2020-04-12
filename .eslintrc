@@ -13,6 +13,8 @@
   },
   "rules": {
     "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/no-use-before-define": "off",
+    "@typescript-eslint/switch-exhaustiveness-check": "error",
     "node/no-missing-import": "off",
     "node/no-unsupported-features/es-syntax": "off",
     "no-process-exit": "off"
@@ -20,9 +22,10 @@
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
     "ecmaVersion": 6,
-    "sourceType": "module",
     "ecmaFeatures": {
       "modules": true
-    }
+    },
+    "project": "./tsconfig.json",
+    "sourceType": "module"
   }
 }

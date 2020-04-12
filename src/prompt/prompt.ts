@@ -1,5 +1,7 @@
 import readline from 'readline';
 
+import { printAST } from '../compiler/parser/ast-printer';
+import { Parser } from '../compiler/parser/parser';
 import { Scanner } from '../compiler/scanner/scanner';
 
 const rl = readline.createInterface({
@@ -13,7 +15,13 @@ const read = (): void => {
       return rl.close();
     }
 
-    console.log(new Scanner(input).scanTokens());
+    try {
+      const tokens = new Scanner(input).scanTokens();
+      console.log(printAST(new Parser(tokens).parse()));
+    } catch (e) {
+      console.log(e);
+    }
+
     read();
   });
 };
