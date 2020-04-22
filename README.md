@@ -25,10 +25,36 @@ Blocks are wrapped by braces. While they have their own scope, they can read and
     let foo = "global bar";
 
     {
-        let foo = "scoped bar";
+      let foo = "scoped bar";
 
-        // Prints "scoped bar"
-        print foo;
+      print foo; // Prints "scoped bar"
     };
 
 Blocks implicitly return the value of its last statement.
+
+## Functions
+
+Function blocks also implicitly return the value of its last statement.
+
+### Declaration
+
+    func double(n) {
+      n * 2;
+    };
+
+    print double(5); // Prints `10`
+
+### Calling
+
+Functions can be called with parens or with the pipe operator `->`
+
+    func double(n) {
+      n * 2;
+    };
+
+    func subtract(x, y) {
+      x - y;
+    };
+
+    print subtract(double(5), 8); // Prints `2`
+    print 5 -> double -> subtract(8); // Prints `2`

@@ -12,6 +12,7 @@ const LEFT_PAREN_TOKEN: Token = { lexeme: '(', line: 1, literal: null, type: 'LE
 const RIGHT_PAREN_TOKEN: Token = { lexeme: ')', line: 1, literal: null, type: 'RIGHT_PAREN' };
 const LEFT_BRACE_TOKEN: Token = { lexeme: '{', line: 1, literal: null, type: 'LEFT_BRACE' };
 const RIGHT_BRACE_TOKEN: Token = { lexeme: '}', line: 1, literal: null, type: 'RIGHT_BRACE' };
+const PIPE_TOKEN: Token = { lexeme: '->', line: 1, literal: null, type: 'PIPE' };
 
 let consoleSpy: jest.SpyInstance;
 let processSpy: jest.SpyInstance;
@@ -209,48 +210,204 @@ describe('parser', () => {
     describe('function call expressions', () => {
       const funcIdentifier: Token = { lexeme: 'foo', line: 1, literal: 'foo', type: 'IDENTIFIER' };
 
-      test('without arguments', () => {
-        expect(createValidExpression(funcIdentifier, LEFT_PAREN_TOKEN, RIGHT_PAREN_TOKEN)).toEqual({
-          __kind: 'funcCallExpr',
-          arguments: [],
-          name: funcIdentifier,
+      describe('calls with parens', () => {
+        test('without arguments', () => {
+          expect(createValidExpression(funcIdentifier, LEFT_PAREN_TOKEN, RIGHT_PAREN_TOKEN)).toEqual({
+            __kind: 'funcCallExpr',
+            arguments: [],
+            name: funcIdentifier,
+          });
+        });
+
+        test('with one argument', () => {
+          const arg: Token = { lexeme: '1', line: 1, literal: 1, type: 'NUMBER' };
+
+          expect(createValidExpression(funcIdentifier, LEFT_PAREN_TOKEN, arg, RIGHT_PAREN_TOKEN)).toEqual({
+            __kind: 'funcCallExpr',
+            arguments: [
+              {
+                __kind: 'literalExpr',
+                value: 1,
+              },
+            ],
+            name: funcIdentifier,
+          });
+        });
+
+        test('with multiple arguments', () => {
+          const argOne: Token = { lexeme: '1', line: 1, literal: 1, type: 'NUMBER' };
+          const argTwo: Token = { lexeme: 'nil', line: 1, literal: null, type: 'NIL' };
+
+          expect(
+            createValidExpression(funcIdentifier, LEFT_PAREN_TOKEN, argOne, COMMA_TOKEN, argTwo, RIGHT_PAREN_TOKEN),
+          ).toEqual({
+            __kind: 'funcCallExpr',
+            arguments: [
+              {
+                __kind: 'literalExpr',
+                value: 1,
+              },
+              {
+                __kind: 'literalExpr',
+                value: 'nil',
+              },
+            ],
+            name: funcIdentifier,
+          });
         });
       });
 
-      test('with one argument', () => {
-        const arg: Token = { lexeme: '1', line: 1, literal: 1, type: 'NUMBER' };
+      describe('calls with pipe', () => {
+        describe('one arg', () => {
+          test('single pipe', () => {
+            const arg: Token = { lexeme: '3', line: 1, literal: 3, type: 'NUMBER' };
 
-        expect(createValidExpression(funcIdentifier, LEFT_PAREN_TOKEN, arg, RIGHT_PAREN_TOKEN)).toEqual({
-          __kind: 'funcCallExpr',
-          arguments: [
-            {
-              __kind: 'literalExpr',
-              value: 1,
-            },
-          ],
-          name: funcIdentifier,
+            expect(createValidExpression(arg, PIPE_TOKEN, funcIdentifier)).toEqual({
+              __kind: 'funcCallExpr',
+              arguments: [{ __kind: 'literalExpr', value: 3 }],
+              name: funcIdentifier,
+            });
+          });
+
+          test('double pipe', () => {
+            const double: Token = { lexeme: 'double', line: 1, literal: 'double', type: 'IDENTIFIER' };
+            const addTwo: Token = { lexeme: 'add_two', line: 1, literal: 'add_two', type: 'IDENTIFIER' };
+
+            const arg: Token = { lexeme: '3', line: 1, literal: 3, type: 'NUMBER' };
+
+            expect(createValidExpression(arg, PIPE_TOKEN, double, PIPE_TOKEN, addTwo)).toEqual({
+              __kind: 'funcCallExpr',
+              arguments: [
+                { __kind: 'funcCallExpr', arguments: [{ __kind: 'literalExpr', value: arg.literal }], name: double },
+              ],
+              name: addTwo,
+            });
+          });
+
+          test('triple', () => {
+            const double: Token = { lexeme: 'double', line: 1, literal: 'double', type: 'IDENTIFIER' };
+            const addTwo: Token = { lexeme: 'add_two', line: 1, literal: 'add_two', type: 'IDENTIFIER' };
+            const triple: Token = { lexeme: 'triple', line: 1, literal: 'triple', type: 'IDENTIFIER' };
+
+            const arg: Token = { lexeme: '3', line: 1, literal: 3, type: 'NUMBER' };
+
+            expect(createValidExpression(arg, PIPE_TOKEN, double, PIPE_TOKEN, addTwo, PIPE_TOKEN, triple)).toEqual({
+              __kind: 'funcCallExpr',
+              arguments: [
+                {
+                  __kind: 'funcCallExpr',
+                  arguments: [
+                    {
+                      __kind: 'funcCallExpr',
+                      arguments: [{ __kind: 'literalExpr', value: arg.literal }],
+                      name: double,
+                    },
+                  ],
+                  name: addTwo,
+                },
+              ],
+              name: triple,
+            });
+          });
         });
-      });
 
-      test('with multiple arguments', () => {
-        const argOne: Token = { lexeme: '1', line: 1, literal: 1, type: 'NUMBER' };
-        const argTwo: Token = { lexeme: 'nil', line: 1, literal: null, type: 'NIL' };
+        describe('two args', () => {
+          test('single pipe', () => {
+            const argOne: Token = { lexeme: '1', line: 1, literal: 1, type: 'NUMBER' };
+            const argTwo: Token = { lexeme: '2', line: 1, literal: 2, type: 'NUMBER' };
+            const add: Token = { lexeme: 'add', line: 1, literal: 'add', type: 'IDENTIFIER' };
 
-        expect(
-          createValidExpression(funcIdentifier, LEFT_PAREN_TOKEN, argOne, COMMA_TOKEN, argTwo, RIGHT_PAREN_TOKEN),
-        ).toEqual({
-          __kind: 'funcCallExpr',
-          arguments: [
-            {
-              __kind: 'literalExpr',
-              value: 1,
-            },
-            {
-              __kind: 'literalExpr',
-              value: 'nil',
-            },
-          ],
-          name: funcIdentifier,
+            expect(createValidExpression(argTwo, PIPE_TOKEN, add, LEFT_PAREN_TOKEN, argOne, RIGHT_PAREN_TOKEN)).toEqual(
+              {
+                __kind: 'funcCallExpr',
+                arguments: [
+                  { __kind: 'literalExpr', value: 2 },
+                  { __kind: 'literalExpr', value: 1 },
+                ],
+                name: { lexeme: 'add', line: 1, literal: 'add', type: 'IDENTIFIER' },
+              },
+            );
+          });
+
+          test('double pipe', () => {
+            const argOne: Token = { lexeme: '1', line: 1, literal: 1, type: 'NUMBER' };
+            const argTwo: Token = { lexeme: '2', line: 1, literal: 2, type: 'NUMBER' };
+            const argThree: Token = { lexeme: '3', line: 1, literal: 3, type: 'NUMBER' };
+            const add: Token = { lexeme: 'add', line: 1, literal: 'add', type: 'IDENTIFIER' };
+            const mult: Token = { lexeme: 'mult', line: 1, literal: 'mult', type: 'IDENTIFIER' };
+
+            expect(
+              createValidExpression(
+                argThree,
+                PIPE_TOKEN,
+                add,
+                LEFT_PAREN_TOKEN,
+                argTwo,
+                RIGHT_PAREN_TOKEN,
+                PIPE_TOKEN,
+                mult,
+                LEFT_PAREN_TOKEN,
+                argOne,
+                RIGHT_PAREN_TOKEN,
+              ),
+            ).toEqual({
+              __kind: 'funcCallExpr',
+              arguments: [
+                {
+                  __kind: 'funcCallExpr',
+                  arguments: [
+                    { __kind: 'literalExpr', value: 3 },
+                    { __kind: 'literalExpr', value: 2 },
+                  ],
+                  name: { lexeme: 'add', line: 1, literal: 'add', type: 'IDENTIFIER' },
+                },
+                { __kind: 'literalExpr', value: 1 },
+              ],
+              name: { lexeme: 'mult', line: 1, literal: 'mult', type: 'IDENTIFIER' },
+            });
+          });
+
+          test('multiple pipes with multiple args', () => {
+            const argOne: Token = { lexeme: '1', line: 1, literal: 1, type: 'NUMBER' };
+            const argTwo: Token = { lexeme: '2', line: 1, literal: 2, type: 'NUMBER' };
+            const argThree: Token = { lexeme: '3', line: 1, literal: 3, type: 'NUMBER' };
+            const argFour: Token = { lexeme: '4', line: 1, literal: 4, type: 'NUMBER' };
+            const add: Token = { lexeme: 'add', line: 1, literal: 'add', type: 'IDENTIFIER' };
+            const mult: Token = { lexeme: 'mult', line: 1, literal: 'mult', type: 'IDENTIFIER' };
+
+            expect(
+              createValidExpression(
+                argFour,
+                PIPE_TOKEN,
+                add,
+                LEFT_PAREN_TOKEN,
+                argThree,
+                RIGHT_PAREN_TOKEN,
+                PIPE_TOKEN,
+                mult,
+                LEFT_PAREN_TOKEN,
+                argTwo,
+                COMMA_TOKEN,
+                argOne,
+                RIGHT_PAREN_TOKEN,
+              ),
+            ).toEqual({
+              __kind: 'funcCallExpr',
+              arguments: [
+                {
+                  __kind: 'funcCallExpr',
+                  arguments: [
+                    { __kind: 'literalExpr', value: 4 },
+                    { __kind: 'literalExpr', value: 3 },
+                  ],
+                  name: { lexeme: 'add', line: 1, literal: 'add', type: 'IDENTIFIER' },
+                },
+                { __kind: 'literalExpr', value: 2 },
+                { __kind: 'literalExpr', value: 1 },
+              ],
+              name: { lexeme: 'mult', line: 1, literal: 'mult', type: 'IDENTIFIER' },
+            });
+          });
         });
       });
     });
