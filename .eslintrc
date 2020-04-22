@@ -16,6 +16,7 @@
     "@typescript-eslint/no-explicit-any": "off",
     "@typescript-eslint/no-use-before-define": "off",
     "@typescript-eslint/switch-exhaustiveness-check": "error",
+    "no-constant-condition": ["error", { "checkLoops": false }],
     "node/no-missing-import": "off",
     "node/no-unsupported-features/es-syntax": "off",
     "no-process-exit": "off"

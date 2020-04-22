@@ -1,14 +1,14 @@
 import { reportError } from '../../utils/report-error';
 
 import {
+  BlockExpr,
   Expr,
   ExpressionStmt,
-  LetStmt,
+  FuncDefStmt,
   LetMutStmt,
+  LetStmt,
   PrintStmt,
   Stmt,
-  FuncDefStmt,
-  BlockExpr,
   VariableExpr,
 } from './types';
 import { Token, TokenType } from '../scanner/types';
@@ -16,6 +16,7 @@ import { Token, TokenType } from '../scanner/types';
 const EXPECTED_SEMICOLON = 'Expected ";" after expression';
 
 export class Parser {
+  private pendingExpr: Expr[] = [];
   private tokens: Token[];
 
   private current = 0;
@@ -106,15 +107,23 @@ export class Parser {
     return this.tokens[this.current + 1] ?? null;
   };
 
-  private previous = (): Token => {
-    return this.tokens[this.current - 1];
+  private previous = (): Token | null => {
+    return this.tokens[this.current - 1] ?? null;
+  };
+
+  private nthPreviousToken = (n: number): Token | null => {
+    return this.tokens[this.current - n] ?? null;
   };
 
   // Expressions
   private expression = (): Expr => {
-    const { block } = this;
+    const { block, match, pipe } = this;
 
-    return block();
+    const expr = block();
+    if (match('PIPE')) {
+      return pipe(expr);
+    }
+    return expr;
   };
 
   private addition = (): Expr => {
@@ -209,8 +218,26 @@ export class Parser {
     return expr;
   };
 
+  private pipe = (firstExpr: Expr): Expr | never => {
+    const { block, match, peek } = this;
+
+    this.pendingExpr.push(firstExpr);
+
+    while (true) {
+      const expr: Expr = block();
+
+      if (peek().type === 'SEMICOLON') {
+        return expr;
+      } else if (match('PIPE')) {
+        this.pendingExpr.push(expr);
+      } else {
+        reportError('Expected ";" or "->"');
+      }
+    }
+  };
+
   private primary = (): Expr | never => {
-    const { consume, error, expression, match, peek, previous } = this;
+    const { consume, error, expression, match, nthPreviousToken, peek, previous } = this;
 
     if (match('FALSE')) {
       return {
@@ -243,6 +270,9 @@ export class Parser {
 
       if (match('LEFT_PAREN')) {
         const args: Expr[] = [];
+        if (nthPreviousToken(3)?.type === 'PIPE') {
+          args.push(this.pendingExpr.pop());
+        }
 
         let shouldLoop = !match('RIGHT_PAREN');
         while (shouldLoop) {
@@ -259,6 +289,14 @@ export class Parser {
         return {
           __kind: 'funcCallExpr',
           arguments: args,
+          name,
+        };
+      }
+
+      if (nthPreviousToken(2)?.type === 'PIPE') {
+        return {
+          __kind: 'funcCallExpr',
+          arguments: [this.pendingExpr.pop()],
           name,
         };
       }
