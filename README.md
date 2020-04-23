@@ -1,8 +1,42 @@
 # marder
 
-Semicolons are required after statements.
+## General
 
-## Variables
+Marder is a language built for educational purposes only. Therefore, it's always in development and may change a lot over time. Currently, Marder is dynamically typed and its interpreter is written in TypeScript.
+
+## Examples
+
+### Hello World
+
+    print "Hello, world!";
+
+### Fibonacci
+
+    func fibonacci(n) {
+      if n < 1 {
+        0;
+      } else if n <= 2 {
+        1;
+      } else {
+        fibonacci(n - 1) + fibonacci(n - 2);
+      };
+    };
+
+    print fibonacci(7); // Prints `13`
+
+## Overview
+
+Marder requires a semicolon after every statement.
+
+### Keywords
+
+TODO:
+
+### Truthiness
+
+`false` and `nil` are not truthy. Every other expression is truthy.
+
+### Variables
 
 Immutable variables are declared with `let`, mutable variables are declared with `let mut`.
 
@@ -18,25 +52,26 @@ Variables have to be declared and initialized at the same time.
     // valid
     let x = 3;
 
-## Blocks
+### Blocks
 
-Blocks are wrapped by braces. While they have their own scope, they can read and mutate global variables. Local scope has precedence over global scope when a variable name is ambigious.
-
-    let foo = "global bar";
+Blocks are wrapped by braces. While they have their own scope, they can read and mutate their parents' scope (including global scope). Local scope has precedence over parent/global scope when a variable name is ambigious.
 
     {
-      let foo = "scoped bar";
+      let foo = "outer scope";
+      {
+        let foo = "inner scope";
 
-      print foo; // Prints "scoped bar"
+        print foo; // Prints "inner scope"
+      };
     };
 
-Blocks implicitly return the value of its last statement.
+Blocks implicitly return the value of their last statement.
 
-## Functions
+### Functions
 
-Function blocks also implicitly return the value of its last statement.
+Function blocks implicitly return the value of their last statement.
 
-### Declaration
+#### Declaring functions
 
     func double(n) {
       n * 2;
@@ -44,7 +79,7 @@ Function blocks also implicitly return the value of its last statement.
 
     print double(5); // Prints `10`
 
-### Calling
+#### Calling functions
 
 Functions can be called with parens or with the pipe operator `->`
 
@@ -58,3 +93,34 @@ Functions can be called with parens or with the pipe operator `->`
 
     print subtract(double(5), 8); // Prints `2`
     print 5 -> double -> subtract(8); // Prints `2`
+
+### Control Flow
+
+#### If expressions
+
+If expression blocks implicitly return the value of their last statement.
+
+    let val =
+      if false {
+        "foo";
+      } else if true {
+        "bar";
+      } else {
+        "foobar";
+      };
+
+    print val; // Prints "bar"
+
+When assigning an if expression which never returns a value to a variable, an error is thrown at run-time as variables need to be declared and initialized at the same time.
+
+    // Error: `Undefined variable "var"`
+    let val = if false {
+      "foo";
+    };
+
+    // No error. `val` is "bar"
+    let val = if false {
+      "foo";
+    } else {
+      "bar";
+    };

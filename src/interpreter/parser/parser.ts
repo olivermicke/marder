@@ -146,11 +146,11 @@ export class Parser {
   };
 
   private block = (): Expr => {
-    const { blockExpression, equality } = this;
+    const { blockExpression, ifExpr } = this;
 
     const blockExpr = blockExpression();
 
-    return blockExpr === null ? equality() : blockExpr;
+    return blockExpr === null ? ifExpr() : blockExpr;
   };
 
   private blockExpression = (): BlockExpr | null => {
@@ -199,6 +199,54 @@ export class Parser {
     return expr;
   };
 
+  private parseBranch = (shouldParseCondition: boolean): { block: BlockExpr; condition: Expr } => {
+    const { blockExpression, expression } = this;
+
+    const condition: Expr = shouldParseCondition ? expression() : null;
+
+    const block: BlockExpr = blockExpression();
+    if (block === null) {
+      reportError('Expected block after condition');
+    }
+    return { block, condition };
+  };
+
+  private parseIfExpr = (): Expr | never => {
+    const { match, parseBranch, peek } = this;
+
+    const branches = [];
+
+    let shouldLoop = true;
+    while (shouldLoop) {
+      branches.push(parseBranch(true));
+
+      if (peek().type === 'SEMICOLON') {
+        shouldLoop = false;
+      } else if (match('ELSE')) {
+        if (!match('IF')) {
+          branches.push(parseBranch(false));
+          shouldLoop = false;
+        }
+      } else {
+        reportError('Expected ";" or "else" after `if` expression block');
+      }
+    }
+
+    return {
+      __kind: 'ifExpr',
+      branches,
+    };
+  };
+
+  private ifExpr = (): Expr => {
+    const { equality, match, parseIfExpr } = this;
+
+    if (match('IF')) {
+      return parseIfExpr();
+    }
+    return equality();
+  };
+
   private multiplication = (): Expr => {
     const { match, previous, unary } = this;
 
@@ -242,13 +290,13 @@ export class Parser {
     if (match('FALSE')) {
       return {
         __kind: 'literalExpr',
-        value: 'false',
+        value: false,
       };
     }
     if (match('TRUE')) {
       return {
         __kind: 'literalExpr',
-        value: 'true',
+        value: true,
       };
     }
     if (match('NIL')) {

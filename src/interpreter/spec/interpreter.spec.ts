@@ -101,14 +101,14 @@ describe('interpreter', () => {
       describe('are evaluated correctly', () => {
         test('for operator "and"', () => {
           [
-            ['true', 'true', 'true'],
-            ['true', 'false', 'false'],
-            ['false', 'true', 'false'],
-            ['false', 'false', 'false'],
-            ['true', 'nil', 'false'],
-            ['nil', 'true', 'false'],
-            ['false', 'nil', 'false'],
-            ['nil', 'false', 'false'],
+            [true, true, 'true'],
+            [true, false, 'false'],
+            [false, true, 'false'],
+            [false, false, 'false'],
+            [true, 'nil', 'false'],
+            ['nil', true, 'false'],
+            [false, 'nil', 'false'],
+            ['nil', false, 'false'],
             ['nil', 'nil', 'false'],
             [1, 2, 'true'],
             [1, 1, 'true'],
@@ -140,14 +140,14 @@ describe('interpreter', () => {
 
         test('for operator "!="', () => {
           [
-            ['true', 'true', 'false'],
-            ['true', 'false', 'true'],
-            ['false', 'true', 'true'],
-            ['false', 'false', 'false'],
-            ['true', 'nil', 'true'],
-            ['nil', 'true', 'true'],
-            ['false', 'nil', 'true'],
-            ['nil', 'false', 'true'],
+            [true, true, 'false'],
+            [true, false, 'true'],
+            [false, true, 'true'],
+            [false, false, 'false'],
+            [true, 'nil', 'true'],
+            ['nil', true, 'true'],
+            [false, 'nil', 'true'],
+            ['nil', false, 'true'],
             ['nil', 'nil', 'false'],
             [1, 2, 'true'],
             [1, 1, 'false'],
@@ -179,14 +179,14 @@ describe('interpreter', () => {
 
         test('for operator "=="', () => {
           [
-            ['true', 'true', 'true'],
-            ['true', 'false', 'false'],
-            ['false', 'true', 'false'],
-            ['false', 'false', 'true'],
-            ['true', 'nil', 'false'],
-            ['nil', 'true', 'false'],
-            ['false', 'nil', 'false'],
-            ['nil', 'false', 'false'],
+            [true, true, 'true'],
+            [true, false, 'false'],
+            [false, true, 'false'],
+            [false, false, 'true'],
+            [true, 'nil', 'false'],
+            ['nil', true, 'false'],
+            [false, 'nil', 'false'],
+            ['nil', false, 'false'],
             ['nil', 'nil', 'true'],
             [1, 2, 'false'],
             [1, 1, 'true'],
@@ -218,14 +218,14 @@ describe('interpreter', () => {
 
         test('for operator "<"', () => {
           [
-            ['true', 'true', PROCESS_EXIT],
-            ['true', 'false', PROCESS_EXIT],
-            ['false', 'true', PROCESS_EXIT],
-            ['false', 'false', PROCESS_EXIT],
-            ['true', 'nil', PROCESS_EXIT],
-            ['nil', 'true', PROCESS_EXIT],
-            ['false', 'nil', PROCESS_EXIT],
-            ['nil', 'false', PROCESS_EXIT],
+            [true, true, PROCESS_EXIT],
+            [true, false, PROCESS_EXIT],
+            [false, true, PROCESS_EXIT],
+            [false, false, PROCESS_EXIT],
+            [true, 'nil', PROCESS_EXIT],
+            ['nil', true, PROCESS_EXIT],
+            [false, 'nil', PROCESS_EXIT],
+            ['nil', false, PROCESS_EXIT],
             ['nil', 'nil', PROCESS_EXIT],
             [1, 2, 'true'],
             [1, 1, 'false'],
@@ -263,14 +263,14 @@ describe('interpreter', () => {
 
         test('for operator "<="', () => {
           [
-            ['true', 'true', PROCESS_EXIT],
-            ['true', 'false', PROCESS_EXIT],
-            ['false', 'true', PROCESS_EXIT],
-            ['false', 'false', PROCESS_EXIT],
-            ['true', 'nil', PROCESS_EXIT],
-            ['nil', 'true', PROCESS_EXIT],
-            ['false', 'nil', PROCESS_EXIT],
-            ['nil', 'false', PROCESS_EXIT],
+            [true, true, PROCESS_EXIT],
+            [true, false, PROCESS_EXIT],
+            [false, true, PROCESS_EXIT],
+            [false, false, PROCESS_EXIT],
+            [true, 'nil', PROCESS_EXIT],
+            ['nil', true, PROCESS_EXIT],
+            [false, 'nil', PROCESS_EXIT],
+            ['nil', false, PROCESS_EXIT],
             ['nil', 'nil', PROCESS_EXIT],
             [1, 2, 'true'],
             [1, 1, 'true'],
@@ -308,14 +308,14 @@ describe('interpreter', () => {
 
         test('for operator ">"', () => {
           [
-            ['true', 'true', PROCESS_EXIT],
-            ['true', 'false', PROCESS_EXIT],
-            ['false', 'true', PROCESS_EXIT],
-            ['false', 'false', PROCESS_EXIT],
-            ['true', 'nil', PROCESS_EXIT],
-            ['nil', 'true', PROCESS_EXIT],
-            ['false', 'nil', PROCESS_EXIT],
-            ['nil', 'false', PROCESS_EXIT],
+            [true, true, PROCESS_EXIT],
+            [true, false, PROCESS_EXIT],
+            [false, true, PROCESS_EXIT],
+            [false, false, PROCESS_EXIT],
+            [true, 'nil', PROCESS_EXIT],
+            ['nil', true, PROCESS_EXIT],
+            [false, 'nil', PROCESS_EXIT],
+            ['nil', false, PROCESS_EXIT],
             ['nil', 'nil', PROCESS_EXIT],
             [1, 2, 'false'],
             [1, 1, 'false'],
@@ -353,14 +353,14 @@ describe('interpreter', () => {
 
         test('for operator ">="', () => {
           [
-            ['true', 'true', PROCESS_EXIT],
-            ['true', 'false', PROCESS_EXIT],
-            ['false', 'true', PROCESS_EXIT],
-            ['false', 'false', PROCESS_EXIT],
-            ['true', 'nil', PROCESS_EXIT],
-            ['nil', 'true', PROCESS_EXIT],
-            ['false', 'nil', PROCESS_EXIT],
-            ['nil', 'false', PROCESS_EXIT],
+            [true, true, PROCESS_EXIT],
+            [true, false, PROCESS_EXIT],
+            [false, true, PROCESS_EXIT],
+            [false, false, PROCESS_EXIT],
+            [true, 'nil', PROCESS_EXIT],
+            ['nil', true, PROCESS_EXIT],
+            [false, 'nil', PROCESS_EXIT],
+            ['nil', false, PROCESS_EXIT],
             ['nil', 'nil', PROCESS_EXIT],
             [1, 2, 'false'],
             [1, 1, 'true'],
@@ -398,14 +398,14 @@ describe('interpreter', () => {
 
         test('for operator "-"', () => {
           [
-            ['true', 'true', PROCESS_EXIT],
-            ['true', 'false', PROCESS_EXIT],
-            ['false', 'true', PROCESS_EXIT],
-            ['false', 'false', PROCESS_EXIT],
-            ['true', 'nil', PROCESS_EXIT],
-            ['nil', 'true', PROCESS_EXIT],
-            ['false', 'nil', PROCESS_EXIT],
-            ['nil', 'false', PROCESS_EXIT],
+            [true, true, PROCESS_EXIT],
+            [true, false, PROCESS_EXIT],
+            [false, true, PROCESS_EXIT],
+            [false, false, PROCESS_EXIT],
+            [true, 'nil', PROCESS_EXIT],
+            ['nil', true, PROCESS_EXIT],
+            [false, 'nil', PROCESS_EXIT],
+            ['nil', false, PROCESS_EXIT],
             ['nil', 'nil', PROCESS_EXIT],
             [1, 2, '-1'],
             [1, 1, '0'],
@@ -443,14 +443,14 @@ describe('interpreter', () => {
 
         test('for operator "or"', () => {
           [
-            ['true', 'true', 'true'],
-            ['true', 'false', 'true'],
-            ['false', 'true', 'true'],
-            ['false', 'false', 'false'],
-            ['true', 'nil', 'true'],
-            ['nil', 'true', 'true'],
-            ['false', 'nil', 'false'],
-            ['nil', 'false', 'false'],
+            [true, true, 'true'],
+            [true, false, 'true'],
+            [false, true, 'true'],
+            [false, false, 'false'],
+            [true, 'nil', 'true'],
+            ['nil', true, 'true'],
+            [false, 'nil', 'false'],
+            ['nil', false, 'false'],
             ['nil', 'nil', 'false'],
             [1, 2, 'true'],
             [1, 1, 'true'],
@@ -482,14 +482,14 @@ describe('interpreter', () => {
 
         test('for operator "+"', () => {
           [
-            ['true', 'true', PROCESS_EXIT],
-            ['true', 'false', PROCESS_EXIT],
-            ['false', 'true', PROCESS_EXIT],
-            ['false', 'false', PROCESS_EXIT],
-            ['true', 'nil', PROCESS_EXIT],
-            ['nil', 'true', PROCESS_EXIT],
-            ['false', 'nil', PROCESS_EXIT],
-            ['nil', 'false', PROCESS_EXIT],
+            [true, true, PROCESS_EXIT],
+            [true, false, PROCESS_EXIT],
+            [false, true, PROCESS_EXIT],
+            [false, false, PROCESS_EXIT],
+            [true, 'nil', PROCESS_EXIT],
+            ['nil', true, PROCESS_EXIT],
+            [false, 'nil', PROCESS_EXIT],
+            ['nil', false, PROCESS_EXIT],
             ['nil', 'nil', PROCESS_EXIT],
             [1, 2, '3'],
             [1, 1, '2'],
@@ -527,14 +527,14 @@ describe('interpreter', () => {
 
         test('for operator "/"', () => {
           [
-            ['true', 'true', PROCESS_EXIT],
-            ['true', 'false', PROCESS_EXIT],
-            ['false', 'true', PROCESS_EXIT],
-            ['false', 'false', PROCESS_EXIT],
-            ['true', 'nil', PROCESS_EXIT],
-            ['nil', 'true', PROCESS_EXIT],
-            ['false', 'nil', PROCESS_EXIT],
-            ['nil', 'false', PROCESS_EXIT],
+            [true, true, PROCESS_EXIT],
+            [true, false, PROCESS_EXIT],
+            [false, true, PROCESS_EXIT],
+            [false, false, PROCESS_EXIT],
+            [true, 'nil', PROCESS_EXIT],
+            ['nil', true, PROCESS_EXIT],
+            [false, 'nil', PROCESS_EXIT],
+            ['nil', false, PROCESS_EXIT],
             ['nil', 'nil', PROCESS_EXIT],
             [2, 1, '2'],
             [1, 2, '0.5'],
@@ -574,14 +574,14 @@ describe('interpreter', () => {
 
         test('for operator "*"', () => {
           [
-            ['true', 'true', PROCESS_EXIT],
-            ['true', 'false', PROCESS_EXIT],
-            ['false', 'true', PROCESS_EXIT],
-            ['false', 'false', PROCESS_EXIT],
-            ['true', 'nil', PROCESS_EXIT],
-            ['nil', 'true', PROCESS_EXIT],
-            ['false', 'nil', PROCESS_EXIT],
-            ['nil', 'false', PROCESS_EXIT],
+            [true, true, PROCESS_EXIT],
+            [true, false, PROCESS_EXIT],
+            [false, true, PROCESS_EXIT],
+            [false, false, PROCESS_EXIT],
+            [true, 'nil', PROCESS_EXIT],
+            ['nil', true, PROCESS_EXIT],
+            [false, 'nil', PROCESS_EXIT],
+            ['nil', false, PROCESS_EXIT],
             ['nil', 'nil', PROCESS_EXIT],
             [2, 1, '2'],
             [1, 2, '2'],
@@ -622,6 +622,35 @@ describe('interpreter', () => {
     });
 
     describe('block expressions', () => {
+      test("can be nested and have access to their parents' scope", () => {
+        const outerScopedVar: LetStmt = {
+          __kind: 'letStmt',
+          initializer: { __kind: 'literalExpr', value: 'read from outer scope' },
+          name: { lexeme: 'foo', line: 1, literal: 'foo', type: 'IDENTIFIER' },
+        };
+
+        const innerScope: BlockExpr = {
+          __kind: 'blockExpr',
+          statements: [
+            {
+              __kind: 'printStmt',
+              expression: {
+                __kind: 'variableExpr',
+                name: outerScopedVar.name,
+              },
+            },
+          ],
+        };
+
+        const outerScope: BlockExpr = {
+          __kind: 'blockExpr',
+          statements: [outerScopedVar, { __kind: 'expressionStmt', expression: innerScope }],
+        };
+
+        interpret([{ __kind: 'expressionStmt', expression: outerScope }]);
+        expect(consoleLogMock).toBeCalledWith('read from outer scope');
+      });
+
       test('create scope', () => {
         const scopedVar: LetStmt = {
           __kind: 'letStmt',
@@ -934,6 +963,156 @@ describe('interpreter', () => {
       });
     });
 
+    describe('if expressions', () => {
+      describe('single if branch', () => {
+        const createPrintIfExpr = (conditionValue: boolean | string): PrintStmt => ({
+          __kind: 'printStmt',
+          expression: {
+            __kind: 'ifExpr',
+            branches: [
+              {
+                block: {
+                  __kind: 'blockExpr',
+                  statements: [
+                    {
+                      __kind: 'expressionStmt',
+                      expression: {
+                        __kind: 'literalExpr',
+                        value: 'foo',
+                      },
+                    },
+                  ],
+                },
+                condition: { __kind: 'literalExpr', value: conditionValue },
+              },
+            ],
+          },
+        });
+
+        test('is evaluated when it should', () => {
+          interpret([createPrintIfExpr('true')]);
+          expect(consoleLogMock).toBeCalledWith('foo');
+        });
+
+        test('returns "nil" when condition was not met', () => {
+          interpret([createPrintIfExpr(false)]);
+          expect(consoleLogMock).toBeCalledWith('nil');
+        });
+      });
+
+      describe('nested branches', () => {
+        test('"if" & "else if"', () => {
+          /*
+            if 3 <= 2 {
+              "foo";
+            } else if true {
+              "bar";
+            };
+          */
+          interpret([
+            {
+              __kind: 'printStmt',
+              expression: {
+                __kind: 'ifExpr',
+                branches: [
+                  {
+                    block: {
+                      __kind: 'blockExpr',
+                      statements: [
+                        {
+                          __kind: 'expressionStmt',
+                          expression: {
+                            __kind: 'literalExpr',
+                            value: 'foo',
+                          },
+                        },
+                      ],
+                    },
+                    condition: {
+                      __kind: 'binaryExpr',
+                      left: { __kind: 'literalExpr', value: 3 },
+                      operator: { lexeme: '<=', line: 1, literal: null, type: 'LESS_EQUAL' },
+                      right: { __kind: 'literalExpr', value: 2 },
+                    },
+                  },
+                  {
+                    block: {
+                      __kind: 'blockExpr',
+                      statements: [
+                        {
+                          __kind: 'expressionStmt',
+                          expression: {
+                            __kind: 'literalExpr',
+                            value: 'bar',
+                          },
+                        },
+                      ],
+                    },
+                    condition: { __kind: 'literalExpr', value: true },
+                  },
+                ],
+              },
+            },
+          ]);
+          expect(consoleLogMock).toBeCalledWith('bar');
+        });
+
+        test('"if" & "else if"', () => {
+          /*
+            if "false" {
+              "foo";
+            } else {
+              "bar";
+            };
+          */
+          interpret([
+            {
+              __kind: 'printStmt',
+              expression: {
+                __kind: 'ifExpr',
+                branches: [
+                  {
+                    block: {
+                      __kind: 'blockExpr',
+                      statements: [
+                        {
+                          __kind: 'expressionStmt',
+                          expression: {
+                            __kind: 'literalExpr',
+                            value: 'foo',
+                          },
+                        },
+                      ],
+                    },
+                    condition: {
+                      __kind: 'literalExpr',
+                      value: false,
+                    },
+                  },
+                  {
+                    block: {
+                      __kind: 'blockExpr',
+                      statements: [
+                        {
+                          __kind: 'expressionStmt',
+                          expression: {
+                            __kind: 'literalExpr',
+                            value: 'bar',
+                          },
+                        },
+                      ],
+                    },
+                    condition: null,
+                  },
+                ],
+              },
+            },
+          ]);
+          expect(consoleLogMock).toBeCalledWith('bar');
+        });
+      });
+    });
+
     describe('literal expressions', () => {
       test.each`
         literal    | expected
@@ -960,8 +1139,9 @@ describe('interpreter', () => {
       test.each`
         literal    | expected
         ${'nil'}   | ${'true'}
-        ${'true'}  | ${'false'}
-        ${'false'} | ${'true'}
+        ${true}    | ${'false'}
+        ${false}   | ${'true'}
+        ${'false'} | ${'false'}
         ${'foo'}   | ${'false'}
       `('unary "!" works correctly with literal "$literal"', ({ literal, expected }) => {
         interpret([

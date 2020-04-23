@@ -1,6 +1,6 @@
 import { Parser } from '../parser';
 
-import { Expr, Stmt } from '../types';
+import { Expr, Stmt, BlockExpr } from '../types';
 import { Token } from '../../scanner/types';
 
 const EOF_TOKEN: Token = { lexeme: 'EOF', line: 1, literal: null, type: 'EOF' };
@@ -13,6 +13,9 @@ const RIGHT_PAREN_TOKEN: Token = { lexeme: ')', line: 1, literal: null, type: 'R
 const LEFT_BRACE_TOKEN: Token = { lexeme: '{', line: 1, literal: null, type: 'LEFT_BRACE' };
 const RIGHT_BRACE_TOKEN: Token = { lexeme: '}', line: 1, literal: null, type: 'RIGHT_BRACE' };
 const PIPE_TOKEN: Token = { lexeme: '->', line: 1, literal: null, type: 'PIPE' };
+
+const IF_TOKEN: Token = { lexeme: 'if', line: 1, literal: null, type: 'IF' };
+const ELSE_TOKEN: Token = { lexeme: 'else', line: 1, literal: null, type: 'ELSE' };
 
 let consoleSpy: jest.SpyInstance;
 let processSpy: jest.SpyInstance;
@@ -131,7 +134,7 @@ describe('parser', () => {
           },
           right: {
             __kind: 'literalExpr',
-            value: 'true',
+            value: true,
           },
         },
       },
@@ -441,14 +444,153 @@ describe('parser', () => {
       });
     });
 
+    describe('if expressions', () => {
+      const conditionToken: Token = { lexeme: 'true', line: 1, literal: null, type: 'TRUE' };
+
+      const createBlockTokens = (value: number): Token[] => [
+        LEFT_BRACE_TOKEN,
+        { lexeme: String(value), line: 1, literal: value, type: 'NUMBER' },
+        SEMICOLON_TOKEN,
+        RIGHT_BRACE_TOKEN,
+      ];
+
+      const createBlockExpr = (value: number): BlockExpr => ({
+        __kind: 'blockExpr',
+        statements: [
+          {
+            __kind: 'expressionStmt',
+            expression: {
+              __kind: 'literalExpr',
+              value,
+            },
+          },
+        ],
+      });
+
+      describe('are passed correctly for', () => {
+        test('single if condition', () => {
+          const value = 3;
+
+          expect(createValidExpression(IF_TOKEN, conditionToken, ...createBlockTokens(value))).toEqual({
+            __kind: 'ifExpr',
+            branches: [
+              {
+                block: {
+                  __kind: 'blockExpr',
+                  statements: [
+                    {
+                      __kind: 'expressionStmt',
+                      expression: {
+                        __kind: 'literalExpr',
+                        value,
+                      },
+                    },
+                  ],
+                },
+                condition: {
+                  __kind: 'literalExpr',
+                  value: true,
+                },
+              },
+            ],
+          });
+        });
+
+        test('multiple branches', () => {
+          const tokens: Token[] = [
+            IF_TOKEN,
+            { lexeme: 'false', line: 1, literal: null, type: 'FALSE' },
+            ...createBlockTokens(1),
+            ELSE_TOKEN,
+            IF_TOKEN,
+            { lexeme: 'true', line: 1, literal: null, type: 'TRUE' },
+            ...createBlockTokens(2),
+            ELSE_TOKEN,
+            ...createBlockTokens(3),
+          ];
+
+          const expression = createValidExpression(...tokens);
+
+          const expected = {
+            __kind: 'ifExpr',
+            branches: [
+              {
+                block: createBlockExpr(1),
+                condition: {
+                  __kind: 'literalExpr',
+                  value: false,
+                },
+              },
+              {
+                block: createBlockExpr(2),
+                condition: {
+                  __kind: 'literalExpr',
+                  value: true,
+                },
+              },
+              {
+                block: createBlockExpr(3),
+                condition: null,
+              },
+            ],
+          };
+
+          expect(expression).toEqual(expected);
+        });
+      });
+
+      describe('raise error when encountering', () => {
+        test('consecutive "if"', () => {
+          const tokens: Token[] = [
+            IF_TOKEN,
+            { lexeme: 'false', line: 1, literal: null, type: 'FALSE' },
+            ...createBlockTokens(1),
+            IF_TOKEN,
+            { lexeme: 'true', line: 1, literal: null, type: 'TRUE' },
+            ...createBlockTokens(2),
+          ];
+
+          createValidExpression(...tokens);
+
+          expect(processExitMock).toBeCalledWith(1);
+        });
+
+        test('"if else" instead of "else if"', () => {
+          const tokens: Token[] = [
+            IF_TOKEN,
+            { lexeme: 'false', line: 1, literal: null, type: 'FALSE' },
+            ...createBlockTokens(1),
+            IF_TOKEN,
+            ELSE_TOKEN,
+            { lexeme: 'true', line: 1, literal: null, type: 'TRUE' },
+            ...createBlockTokens(2),
+          ];
+
+          createValidExpression(...tokens);
+
+          expect(processExitMock).toBeCalledWith(1);
+        });
+
+        test('missing block', () => {
+          const tokens: Token[] = [IF_TOKEN, { lexeme: 'false', line: 1, literal: null, type: 'FALSE' }];
+
+          createValidExpression(...tokens);
+
+          expect(processExitMock).toBeCalledWith(1);
+        });
+      });
+    });
+
     describe('literal expressions', () => {
       test.each`
-        lexeme     | literal  | type        | expected
-        ${'1'}     | ${1}     | ${'NUMBER'} | ${1}
-        ${'foo'}   | ${'foo'} | ${'STRING'} | ${'foo'}
-        ${'false'} | ${null}  | ${'FALSE'}  | ${'false'}
-        ${'true'}  | ${null}  | ${'TRUE'}   | ${'true'}
-        ${'nil'}   | ${null}  | ${'NIL'}    | ${'nil'}
+        lexeme     | literal    | type        | expected
+        ${'1'}     | ${1}       | ${'NUMBER'} | ${1}
+        ${'foo'}   | ${'foo'}   | ${'STRING'} | ${'foo'}
+        ${'false'} | ${null}    | ${'FALSE'}  | ${false}
+        ${'false'} | ${'false'} | ${'STRING'} | ${'false'}
+        ${'true'}  | ${null}    | ${'TRUE'}   | ${true}
+        ${'true'}  | ${'true'}  | ${'STRING'} | ${'true'}
+        ${'nil'}   | ${null}    | ${'NIL'}    | ${'nil'}
       `('parses literal of lexeme "$lexeme"', ({ lexeme, literal, type, expected }) => {
         const expression = { lexeme, line: 1, literal, type };
 

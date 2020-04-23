@@ -29,7 +29,7 @@ export class Environment {
   };
 
   define = (stmt: LetMutStmt | LetStmt, value: Variable['value'], scope?: Scope): never | void => {
-    const key = stmt.name.literal;
+    const key = stmt.name.literal as string;
     const line = stmt.name.line;
 
     const state = this.getState(scope);
@@ -41,14 +41,14 @@ export class Environment {
       });
     }
 
-    state[key] = {
+    state[key as string] = {
       isMutable: stmt.__kind === 'letMutStmt',
       value,
     };
   };
 
   defineFunction = (stmt: FuncDefStmt, scope?: Scope): never | void => {
-    const key = stmt.name.literal;
+    const key = stmt.name.literal as string;
     const line = stmt.name.line;
 
     const state = this.getState(scope);
@@ -97,7 +97,7 @@ export class Environment {
   };
 
   private mutateGlobal = (stmt: ReassignmentStmt, value: Variable['value']): void => {
-    const key = stmt.name.literal;
+    const key = stmt.name.literal as string;
     const line = stmt.name.line;
 
     const val = this.globalState[key] ?? null;
@@ -116,7 +116,7 @@ export class Environment {
   };
 
   private mutateScoped = (stmt: ReassignmentStmt, value: Variable['value'], scope: Scope): never | void => {
-    const key = stmt.name.literal;
+    const key = stmt.name.literal as string;
     const line = stmt.name.line;
 
     const val = this.scopedState[scope.uuid]?.[key] as Variable;
@@ -142,6 +142,16 @@ export class Environment {
     const value = state[key] ?? null;
     if (value) {
       return value;
+    }
+
+    let parent = scope.parentScope;
+    while (parent) {
+      const value = this.scopedState[parent.uuid][key] ?? null;
+      if (value === null) {
+        parent = parent.parentScope;
+      } else {
+        return value;
+      }
     }
 
     return this.globalState[key] ?? null;
