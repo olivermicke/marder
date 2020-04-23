@@ -926,6 +926,404 @@ describe('interpreter', () => {
           expect(consoleLogMock).toBeCalledWith('111');
         });
       });
+
+      describe('first class support', () => {
+        test('callback', () => {
+          /*
+            func call(fn) {
+              fn();
+            };
+
+            func greet() {
+              "Hello!";
+            };
+
+            print call(greet);
+          */
+          interpret([
+            {
+              __kind: 'funcDefStmt',
+              block: {
+                __kind: 'blockExpr',
+                statements: [
+                  {
+                    __kind: 'expressionStmt',
+                    expression: {
+                      __kind: 'funcCallExpr',
+                      arguments: [],
+                      name: {
+                        lexeme: 'fn',
+                        line: 2,
+                        literal: 'fn',
+                        type: 'IDENTIFIER',
+                      },
+                    },
+                  },
+                ],
+              },
+              name: {
+                lexeme: 'call',
+                line: 1,
+                literal: 'call',
+                type: 'IDENTIFIER',
+              },
+              parameters: [
+                {
+                  __kind: 'variableExpr',
+                  name: {
+                    lexeme: 'fn',
+                    line: 1,
+                    literal: 'fn',
+                    type: 'IDENTIFIER',
+                  },
+                },
+              ],
+            },
+            {
+              __kind: 'funcDefStmt',
+              block: {
+                __kind: 'blockExpr',
+                statements: [
+                  {
+                    __kind: 'expressionStmt',
+                    expression: {
+                      __kind: 'literalExpr',
+                      value: 'Hello!',
+                    },
+                  },
+                ],
+              },
+              name: {
+                lexeme: 'greet',
+                line: 5,
+                literal: 'greet',
+                type: 'IDENTIFIER',
+              },
+              parameters: [],
+            },
+            {
+              __kind: 'printStmt',
+              expression: {
+                __kind: 'funcCallExpr',
+                arguments: [
+                  {
+                    __kind: 'variableExpr',
+                    name: {
+                      lexeme: 'greet',
+                      line: 9,
+                      literal: 'greet',
+                      type: 'IDENTIFIER',
+                    },
+                  },
+                ],
+                name: {
+                  lexeme: 'call',
+                  line: 9,
+                  literal: 'call',
+                  type: 'IDENTIFIER',
+                },
+              },
+            },
+          ]);
+          expect(consoleLogMock).toBeCalledWith('Hello!');
+        });
+
+        test('nesting functions', () => {
+          /*
+            func outer(str) {
+              func inner() {
+                str;
+              };
+
+              inner();
+            };
+
+            print outer("foo");
+          */
+          interpret([
+            {
+              __kind: 'funcDefStmt',
+              block: {
+                __kind: 'blockExpr',
+                statements: [
+                  {
+                    __kind: 'funcDefStmt',
+                    block: {
+                      __kind: 'blockExpr',
+                      statements: [
+                        {
+                          __kind: 'expressionStmt',
+                          expression: {
+                            __kind: 'variableExpr',
+                            name: {
+                              lexeme: 'str',
+                              line: 3,
+                              literal: 'str',
+                              type: 'IDENTIFIER',
+                            },
+                          },
+                        },
+                      ],
+                    },
+                    name: {
+                      lexeme: 'inner',
+                      line: 2,
+                      literal: 'inner',
+                      type: 'IDENTIFIER',
+                    },
+                    parameters: [],
+                  },
+                  {
+                    __kind: 'expressionStmt',
+                    expression: {
+                      __kind: 'funcCallExpr',
+                      arguments: [],
+                      name: {
+                        lexeme: 'inner',
+                        line: 6,
+                        literal: 'inner',
+                        type: 'IDENTIFIER',
+                      },
+                    },
+                  },
+                ],
+              },
+              name: {
+                lexeme: 'outer',
+                line: 1,
+                literal: 'outer',
+                type: 'IDENTIFIER',
+              },
+              parameters: [
+                {
+                  __kind: 'variableExpr',
+                  name: {
+                    lexeme: 'str',
+                    line: 1,
+                    literal: 'str',
+                    type: 'IDENTIFIER',
+                  },
+                },
+              ],
+            },
+            {
+              __kind: 'printStmt',
+              expression: {
+                __kind: 'funcCallExpr',
+                arguments: [
+                  {
+                    __kind: 'literalExpr',
+                    value: 'foo',
+                  },
+                ],
+                name: {
+                  lexeme: 'outer',
+                  line: 9,
+                  literal: 'outer',
+                  type: 'IDENTIFIER',
+                },
+              },
+            },
+          ]);
+          expect(consoleLogMock).toBeCalledWith('foo');
+        });
+
+        test.only('binding funcs to vars', () => {
+          interpret([
+            {
+              __kind: 'funcDefStmt',
+              block: {
+                __kind: 'blockExpr',
+                statements: [
+                  {
+                    __kind: 'expressionStmt',
+                    expression: {
+                      __kind: 'binaryExpr',
+                      left: {
+                        __kind: 'variableExpr',
+                        name: {
+                          lexeme: 'n',
+                          line: 2,
+                          literal: 'n',
+                          type: 'IDENTIFIER',
+                        },
+                      },
+                      operator: {
+                        lexeme: '*',
+                        line: 2,
+                        literal: null,
+                        type: 'STAR',
+                      },
+                      right: {
+                        __kind: 'literalExpr',
+                        value: 2,
+                      },
+                    },
+                  },
+                ],
+              },
+              name: {
+                lexeme: 'double',
+                line: 1,
+                literal: 'double',
+                type: 'IDENTIFIER',
+              },
+              parameters: [
+                {
+                  __kind: 'variableExpr',
+                  name: {
+                    lexeme: 'n',
+                    line: 1,
+                    literal: 'n',
+                    type: 'IDENTIFIER',
+                  },
+                },
+              ],
+            },
+            {
+              __kind: 'letStmt',
+              initializer: {
+                __kind: 'variableExpr',
+                name: {
+                  lexeme: 'double',
+                  line: 5,
+                  literal: 'double',
+                  type: 'IDENTIFIER',
+                },
+              },
+              name: {
+                lexeme: 'd',
+                line: 5,
+                literal: 'd',
+                type: 'IDENTIFIER',
+              },
+            },
+            {
+              __kind: 'printStmt',
+              expression: {
+                __kind: 'funcCallExpr',
+                arguments: [
+                  {
+                    __kind: 'literalExpr',
+                    value: 3,
+                  },
+                ],
+                name: {
+                  lexeme: 'd',
+                  line: 6,
+                  literal: 'd',
+                  type: 'IDENTIFIER',
+                },
+              },
+            },
+          ]);
+          expect(consoleLogMock).toBeCalledWith('6');
+        });
+
+        test.skip('foo', () => {
+          interpret([
+            {
+              __kind: 'funcDefStmt',
+              block: {
+                __kind: 'blockExpr',
+                statements: [
+                  {
+                    __kind: 'letStmt',
+                    initializer: {
+                      __kind: 'literalExpr',
+                      value: 'outside',
+                    },
+                    name: {
+                      lexeme: 'outside',
+                      line: 2,
+                      literal: 'outside',
+                      type: 'IDENTIFIER',
+                    },
+                  },
+                  {
+                    __kind: 'funcDefStmt',
+                    block: {
+                      __kind: 'blockExpr',
+                      statements: [
+                        {
+                          __kind: 'printStmt',
+                          expression: {
+                            __kind: 'variableExpr',
+                            name: {
+                              lexeme: 'outside',
+                              line: 5,
+                              literal: 'outside',
+                              type: 'IDENTIFIER',
+                            },
+                          },
+                        },
+                      ],
+                    },
+                    name: {
+                      lexeme: 'inner',
+                      line: 4,
+                      literal: 'inner',
+                      type: 'IDENTIFIER',
+                    },
+                    parameters: [],
+                  },
+                  {
+                    __kind: 'expressionStmt',
+                    expression: {
+                      __kind: 'variableExpr',
+                      name: {
+                        lexeme: 'inner',
+                        line: 8,
+                        literal: 'inner',
+                        type: 'IDENTIFIER',
+                      },
+                    },
+                  },
+                ],
+              },
+              name: {
+                lexeme: 'returnFunction',
+                line: 1,
+                literal: 'returnFunction',
+                type: 'IDENTIFIER',
+              },
+              parameters: [],
+            },
+            {
+              __kind: 'letStmt',
+              initializer: {
+                __kind: 'funcCallExpr',
+                arguments: [],
+                name: {
+                  lexeme: 'returnFunction',
+                  line: 11,
+                  literal: 'returnFunction',
+                  type: 'IDENTIFIER',
+                },
+              },
+              name: {
+                lexeme: 'fn',
+                line: 11,
+                literal: 'fn',
+                type: 'IDENTIFIER',
+              },
+            },
+            {
+              __kind: 'expressionStmt',
+              expression: {
+                __kind: 'funcCallExpr',
+                arguments: [],
+                name: {
+                  lexeme: 'fn',
+                  line: 12,
+                  literal: 'fn',
+                  type: 'IDENTIFIER',
+                },
+              },
+            },
+          ]);
+        });
+      });
     });
 
     describe('grouping expressions', () => {

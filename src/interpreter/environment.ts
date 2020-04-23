@@ -6,11 +6,13 @@ import { Literal } from './scanner/types';
 type FunctionType = {
   block: BlockExpr;
   parameterNames: string[];
+  type: 'function';
 };
 
 type Variable = {
   isMutable: boolean;
   value: string | number | boolean | null;
+  type: 'variable';
 };
 
 type GlobalState = Record<string, FunctionType | Variable>;
@@ -28,7 +30,7 @@ export class Environment {
     delete this.scopedState[uuid];
   };
 
-  define = (stmt: LetMutStmt | LetStmt, value: Variable['value'], scope?: Scope): never | void => {
+  defineVariable = (stmt: LetMutStmt | LetStmt, value: Variable['value'], scope?: Scope): never | void => {
     const key = stmt.name.literal as string;
     const line = stmt.name.line;
 
@@ -44,6 +46,7 @@ export class Environment {
     state[key as string] = {
       isMutable: stmt.__kind === 'letMutStmt',
       value,
+      type: 'variable',
     };
   };
 
@@ -72,6 +75,7 @@ export class Environment {
     state[key] = {
       block: stmt.block,
       parameterNames,
+      type: 'function',
     } as FunctionType;
   };
 

@@ -45,6 +45,156 @@ describe('parser', () => {
     jest.clearAllMocks();
   });
 
+  test.only('binding func too var', () => {
+    const tokens: Token[] = [
+      {
+        lexeme: 'func',
+        line: 1,
+        literal: null,
+        type: 'FUNC',
+      },
+      {
+        lexeme: 'double',
+        line: 1,
+        literal: 'double',
+        type: 'IDENTIFIER',
+      },
+      {
+        lexeme: '(',
+        line: 1,
+        literal: null,
+        type: 'LEFT_PAREN',
+      },
+      {
+        lexeme: 'n',
+        line: 1,
+        literal: 'n',
+        type: 'IDENTIFIER',
+      },
+      {
+        lexeme: ')',
+        line: 1,
+        literal: null,
+        type: 'RIGHT_PAREN',
+      },
+      {
+        lexeme: '{',
+        line: 1,
+        literal: null,
+        type: 'LEFT_BRACE',
+      },
+      {
+        lexeme: 'n',
+        line: 2,
+        literal: 'n',
+        type: 'IDENTIFIER',
+      },
+      {
+        lexeme: '*',
+        line: 2,
+        literal: null,
+        type: 'STAR',
+      },
+      {
+        lexeme: '2',
+        line: 2,
+        literal: 2,
+        type: 'NUMBER',
+      },
+      {
+        lexeme: ';',
+        line: 2,
+        literal: null,
+        type: 'SEMICOLON',
+      },
+      {
+        lexeme: '}',
+        line: 3,
+        literal: null,
+        type: 'RIGHT_BRACE',
+      },
+      {
+        lexeme: ';',
+        line: 3,
+        literal: null,
+        type: 'SEMICOLON',
+      },
+      {
+        lexeme: 'let',
+        line: 5,
+        literal: null,
+        type: 'LET',
+      },
+      {
+        lexeme: 'd',
+        line: 5,
+        literal: 'd',
+        type: 'IDENTIFIER',
+      },
+      {
+        lexeme: '=',
+        line: 5,
+        literal: null,
+        type: 'EQUAL',
+      },
+      {
+        lexeme: 'double',
+        line: 5,
+        literal: 'double',
+        type: 'IDENTIFIER',
+      },
+      {
+        lexeme: ';',
+        line: 5,
+        literal: null,
+        type: 'SEMICOLON',
+      },
+      {
+        lexeme: 'print',
+        line: 6,
+        literal: null,
+        type: 'PRINT',
+      },
+      {
+        lexeme: 'd',
+        line: 6,
+        literal: 'd',
+        type: 'IDENTIFIER',
+      },
+      {
+        lexeme: '(',
+        line: 6,
+        literal: null,
+        type: 'LEFT_PAREN',
+      },
+      {
+        lexeme: '3',
+        line: 6,
+        literal: 3,
+        type: 'NUMBER',
+      },
+      {
+        lexeme: ')',
+        line: 6,
+        literal: null,
+        type: 'RIGHT_PAREN',
+      },
+      {
+        lexeme: ';',
+        line: 6,
+        literal: null,
+        type: 'SEMICOLON',
+      },
+      {
+        lexeme: '',
+        line: 7,
+        literal: null,
+        type: 'EOF',
+      },
+    ];
+    new Parser(tokens).parse();
+  });
+
   test('creates correct AST', () => {
     const expression = createValidExpression(
       { lexeme: '(', line: 1, literal: null, type: 'LEFT_PAREN' },

@@ -36,8 +36,7 @@ export class Parser {
       }
 
       return statements;
-    } catch (error) {
-      console.log(error);
+    } catch (_error) {
       return null;
     }
   };

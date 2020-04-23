@@ -69,7 +69,7 @@ Blocks implicitly return the value of their last statement.
 
 ### Functions
 
-Function blocks implicitly return the value of their last statement.
+Function blocks implicitly return the value of their last statement. While functions are first-class citizens, closures are not supported yet.
 
 #### Declaring functions
 
@@ -93,6 +93,33 @@ Functions can be called with parens or with the pipe operator `->`
 
     print subtract(double(5), 8); // Prints `2`
     print 5 -> double -> subtract(8); // Prints `2`
+
+#### First-class citizens
+
+Functions can be passed as arguments
+
+    func call(fn) {
+      fn();
+    };
+
+    func greet() {
+      print "Hi";
+    };
+
+    call(greet); // Prints "Hi"
+
+TODO:
+Functions can be bound to variables
+
+    func double(n) {
+      n * 2;
+    };
+
+    let d = double;
+    print d(3); // Prints `6`
+
+TODO:
+Closures
 
 ### Control Flow
 
