@@ -7,6 +7,7 @@ import {
   BinaryExpr,
   BlockExpr,
   Expr,
+  FuncDefStmt,
   GroupingExpr,
   LetStmt,
   Literal,
@@ -77,19 +78,39 @@ export const evaluate = (val: Expr | Stmt, environment: Environment, scope: Scop
         });
       }
 
-      const args: LetStmt[] = parameterNames.map((name, index) => ({
-        __kind: 'letStmt',
-        initializer: {
-          __kind: 'literalExpr',
-          value: parameterValues[index],
-        },
-        name: {
-          lexeme: name,
-          line: val.name.line,
-          literal: name,
-          type: 'IDENTIFIER',
-        },
-      }));
+      const args: (FuncDefStmt | LetStmt)[] = parameterNames.map((name, index) => {
+        const value = parameterValues[index];
+        if (value.type === 'function') {
+          return {
+            __kind: 'funcDefStmt',
+            block: value.block,
+            name: { lexeme: name, line: val.name.line, literal: name, type: 'IDENTIFIER' },
+            parameters: value.parameterNames.map((name: string) => ({
+              __kind: 'variableExpr',
+              name: {
+                line: val.name.line,
+                lexeme: name,
+                literal: name,
+                type: 'IDENTIFIER',
+              },
+            })),
+          };
+        }
+
+        return {
+          __kind: 'letStmt',
+          initializer: {
+            __kind: 'literalExpr',
+            value,
+          },
+          name: {
+            lexeme: name,
+            line: val.name.line,
+            literal: name,
+            type: 'IDENTIFIER',
+          },
+        };
+      });
 
       return evaluate(
         {
@@ -124,7 +145,30 @@ export const evaluate = (val: Expr | Stmt, environment: Environment, scope: Scop
     }
     case 'letStmt':
     case 'letMutStmt': {
-      environment.define(val, evaluate(val.initializer, environment, scope), scope);
+      const value = evaluate(val.initializer, environment, scope);
+      if (value.type === 'function') {
+        const fn = {
+          __kind: 'funcDefStmt',
+          block: value.block,
+          name: val.name,
+          parameters: value.parameterNames.map((name: string) => ({
+            __kind: 'variableExpr',
+            name: {
+              lexeme: name,
+              line: val.name.line,
+              literal: name,
+              type: 'IDENTIFIER',
+            },
+          })),
+        };
+
+        debugger;
+
+        // @ts-ignore
+        environment.defineFunction(fn);
+      } else {
+        environment.defineVariable(val, value, scope);
+      }
       return null;
     }
     case 'groupingExpr': {
@@ -146,14 +190,15 @@ export const evaluate = (val: Expr | Stmt, environment: Environment, scope: Scop
       return evaluateUnaryExpr(val, environment, scope);
     }
     case 'variableExpr': {
-      const value = (environment.read(val.name.literal as string, scope) as any)?.value ?? null;
+      const value = environment.read(val.name.literal as string, scope) ?? null;
       if (value === null) {
         reportError('Undefined variable', {
           number: val.name.line,
           string: `"${val.name.literal}"`,
         });
       }
-      return value;
+
+      return value.type === 'function' ? value : value.value;
     }
   }
 };
