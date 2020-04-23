@@ -5,15 +5,15 @@ import { reportError } from '../utils/report-error';
 import { Environment } from './environment';
 import {
   BinaryExpr,
+  BlockExpr,
   Expr,
   GroupingExpr,
+  LetStmt,
   Literal,
   LiteralExpr,
-  UnaryExpr,
   Scope,
   Stmt,
-  BlockExpr,
-  LetStmt,
+  UnaryExpr,
 } from './parser/types';
 import { Token } from './scanner/types';
 
@@ -34,7 +34,7 @@ export const interpret = (statements: Stmt[]): void | never => {
   }
 };
 
-export const evaluate = (val: Expr | Stmt, environment: Environment, scope?: Scope): any => {
+export const evaluate = (val: Expr | Stmt, environment: Environment, scope: Scope | null = null): any => {
   switch (val.__kind) {
     case 'binaryExpr': {
       return evaluateBinaryExpr(val, environment, scope);
@@ -45,7 +45,7 @@ export const evaluate = (val: Expr | Stmt, environment: Environment, scope?: Sco
 
       let lastValue = null;
       val.statements.forEach((statement) => {
-        lastValue = evaluate(statement, environment, { uuid: scopeUUID });
+        lastValue = evaluate(statement, environment, { parentScope: scope, uuid: scopeUUID });
       });
 
       environment.deleteScope(scopeUUID);
@@ -104,6 +104,24 @@ export const evaluate = (val: Expr | Stmt, environment: Environment, scope?: Sco
       environment.defineFunction(val, scope);
       return null;
     }
+    case 'ifExpr': {
+      const { branches } = val;
+
+      for (let i = 0; i < branches.length; i++) {
+        const { block, condition } = branches[i];
+
+        // Else branch
+        if (condition === null) {
+          return evaluate(block, environment, scope);
+        }
+
+        const evaluatedCondition = evaluate(condition, environment, scope);
+        if (isTruthy(evaluatedCondition)) {
+          return evaluate(block, environment, scope);
+        }
+      }
+      return null;
+    }
     case 'letStmt':
     case 'letMutStmt': {
       environment.define(val, evaluate(val.initializer, environment, scope), scope);
@@ -149,7 +167,7 @@ const stringify = (object: Nullable<Val>): string => {
 };
 
 const isTruthy = (object: Nullable<Val>): boolean => {
-  if (object === null || object === 'false' || object === 'nil') {
+  if (object === null || object === false || object === 'nil') {
     return false;
   }
 

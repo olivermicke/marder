@@ -17,7 +17,7 @@ export type Keyword =
   | 'true'
   | 'while';
 
-export type Literal = string | number | null;
+export type Literal = string | number | boolean | null;
 
 export type Token = {
   lexeme: string;
