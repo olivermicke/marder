@@ -1128,7 +1128,7 @@ describe('interpreter', () => {
           expect(consoleLogMock).toBeCalledWith('foo');
         });
 
-        test.only('binding funcs to vars', () => {
+        test('binding funcs to vars', () => {
           interpret([
             {
               __kind: 'funcDefStmt',
@@ -1220,7 +1220,7 @@ describe('interpreter', () => {
           expect(consoleLogMock).toBeCalledWith('6');
         });
 
-        test.skip('foo', () => {
+        test.only('foo', () => {
           interpret([
             {
               __kind: 'funcDefStmt',

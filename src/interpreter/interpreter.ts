@@ -2,6 +2,38 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { reportError } from '../utils/report-error';
 
+const myObj = {
+  id: 1,
+  children: [
+    {
+      id: 2,
+      children: [
+        {
+          id: 3,
+        },
+      ],
+    },
+    {
+      id: 4,
+      children: [
+        {
+          id: 5,
+          children: [
+            {
+              id: 6,
+              children: [
+                {
+                  id: 7,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  ],
+};
+
 import { Environment } from './environment';
 import {
   BinaryExpr,
@@ -15,8 +47,57 @@ import {
   Scope,
   Stmt,
   UnaryExpr,
+  VariableExpr,
 } from './parser/types';
 import { Token } from './scanner/types';
+
+// https://stackoverflow.com/a/57683319
+// @ts-ignore
+function findAllByKey(obj, keyToFind) {
+  return Object.entries(obj).reduce(
+    (acc, [key, value]) =>
+      key === keyToFind
+        ? acc.concat(value)
+        : typeof value === 'object'
+        ? acc.concat(findAllByKey(value, keyToFind))
+        : acc,
+    [],
+  );
+}
+
+// https://stackoverflow.com/a/45218987
+// @ts-ignore
+var deepFlatten = function (array) {
+  // @ts-ignore
+  var result = [];
+
+  // @ts-ignore
+  array.forEach(function (elem) {
+    if (Array.isArray(elem)) {
+      // @ts-ignore
+      result = result.concat(deepFlatten(elem)); // Fix here
+    } else {
+      result.push(elem);
+    }
+  });
+
+  // @ts-ignore
+  return result;
+};
+
+const findVars = (statements: Stmt[]): VariableExpr[] => {
+  const vars: VariableExpr[] = [];
+
+  statements.forEach((stmt: Stmt) => {
+    const p = deepFlatten(findAllByKey(stmt, 'name'));
+    if (p.length > 0) {
+      // @ts-ignore
+      vars.push(p);
+    }
+  });
+
+  return deepFlatten(vars);
+};
 
 type Nullable<T> = { [P in keyof T]: T[P] | null };
 
@@ -68,7 +149,7 @@ export const evaluate = (val: Expr | Stmt, environment: Environment, scope: Scop
         });
       }
 
-      const parameterNames: string[] = functionVal.parameterNames;
+      const parameterNames: string[] = [...functionVal.parameterNames];
       const parameterValues = val.arguments.map((expr) => evaluate(expr, environment, scope));
 
       if (parameterNames.length !== parameterValues.length) {
@@ -84,7 +165,12 @@ export const evaluate = (val: Expr | Stmt, environment: Environment, scope: Scop
           return {
             __kind: 'funcDefStmt',
             block: value.block,
-            name: { lexeme: name, line: val.name.line, literal: name, type: 'IDENTIFIER' },
+            name: {
+              lexeme: name,
+              line: val.name.line,
+              literal: name,
+              type: 'IDENTIFIER',
+            },
             parameters: value.parameterNames.map((name: string) => ({
               __kind: 'variableExpr',
               name: {
@@ -112,10 +198,28 @@ export const evaluate = (val: Expr | Stmt, environment: Environment, scope: Scop
         };
       });
 
+      // TODO: search through functionVal to find variableExpr and pass them as args for closure support
+      const vars = findVars(functionVal.block.statements.filter((k) => k.__kind === 'funcDefStmt')).map((name) => ({
+        __kind: 'letStmt',
+        initializer: {
+          __kind: 'literalExpr',
+          // TODO:
+          value: 123,
+        },
+        name: {
+          lexeme: name,
+          line: val.name.line,
+          literal: name,
+          type: 'IDENTIFIER',
+        },
+      }));
+      debugger;
+
       return evaluate(
         {
           __kind: 'blockExpr',
-          statements: [...args, ...functionVal.block.statements],
+          // @ts-ignore
+          statements: [...vars, ...args, ...functionVal.block.statements],
         },
         environment,
         scope,
@@ -147,7 +251,7 @@ export const evaluate = (val: Expr | Stmt, environment: Environment, scope: Scop
     case 'letMutStmt': {
       const value = evaluate(val.initializer, environment, scope);
       if (value.type === 'function') {
-        const fn = {
+        const fn: FuncDefStmt = {
           __kind: 'funcDefStmt',
           block: value.block,
           name: val.name,
@@ -161,11 +265,7 @@ export const evaluate = (val: Expr | Stmt, environment: Environment, scope: Scop
             },
           })),
         };
-
-        debugger;
-
-        // @ts-ignore
-        environment.defineFunction(fn);
+        environment.defineFunction(fn, scope);
       } else {
         environment.defineVariable(val, value, scope);
       }
