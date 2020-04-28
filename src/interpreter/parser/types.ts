@@ -1,23 +1,10 @@
 import { Literal as LiteralType, Token } from '../scanner/types';
 
-export type Expr =
-  | BinaryExpr
-  | BlockExpr
-  | FuncCallExpr
-  | GroupingExpr
-  | IfExpr
-  | LiteralExpr
-  | UnaryExpr
-  | VariableExpr;
+export type Expr = BinaryExpr | BlockExpr | CallExpr | GroupingExpr | IfExpr | LiteralExpr | UnaryExpr | VariableExpr;
 
 export type Stmt = ExpressionStmt | FuncDefStmt | LetStmt | LetMutStmt | PrintStmt | ReassignmentStmt;
 
-export type Literal = string | number | boolean | 'nil';
-
-export type Scope = {
-  parentScope: Scope | null;
-  uuid: string;
-};
+export type Literal = string | number | boolean | 'false' | 'true' | 'nil';
 
 // Expressions
 export type BinaryExpr = {
@@ -32,10 +19,10 @@ export type BlockExpr = {
   statements: Stmt[];
 };
 
-export type FuncCallExpr = {
-  __kind: 'funcCallExpr';
+export type CallExpr = {
+  __kind: 'callExpr';
   arguments: Expr[];
-  name: Token;
+  callee: Expr;
 };
 
 export type GroupingExpr = {

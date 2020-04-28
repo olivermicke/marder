@@ -1,177 +1,66 @@
+import { createFunc } from './interpreter';
+
 import { reportError } from '../utils/report-error';
 
-import { LetMutStmt, LetStmt, ReassignmentStmt, Scope, FuncDefStmt, BlockExpr, VariableExpr } from './parser/types';
-import { Literal } from './scanner/types';
+import { Token } from './scanner/types';
 
-type FunctionType = {
-  block: BlockExpr;
-  parameterNames: string[];
-  type: 'function';
-};
-
-type Variable = {
+type EnvField = {
   isMutable: boolean;
-  value: string | number | boolean | null;
-  type: 'variable';
+  value: boolean | null | number | string | ReturnType<typeof createFunc>;
 };
-
-type GlobalState = Record<string, FunctionType | Variable>;
-type ScopedState = Record<Scope['uuid'], Record<string, FunctionType | Variable>>;
 
 export class Environment {
-  private globalState: GlobalState = {};
-  private scopedState: ScopedState = {};
+  private enclosingEnv: Environment;
+  private values: Record<string, EnvField> = {};
 
-  createScope = (uuid: string): void => {
-    this.scopedState[uuid] = {};
-  };
+  constructor({ enclosingEnv }: { enclosingEnv: Environment | null }) {
+    this.enclosingEnv = enclosingEnv;
+  }
 
-  deleteScope = (uuid: string): void => {
-    delete this.scopedState[uuid];
-  };
-
-  defineVariable = (stmt: LetMutStmt | LetStmt, value: Variable['value'], scope?: Scope): never | void => {
-    const key = stmt.name.literal as string;
-    const line = stmt.name.line;
-
-    const state = this.getState(scope);
-
-    if (Object.prototype.hasOwnProperty.call(state, key)) {
-      reportError('Variable has already been defined', {
-        number: line,
-        string: `at "${key}"`,
-      });
+  define = (name: string, value: EnvField['value'], mutability: 'immutable' | 'mutable'): void | never => {
+    if (this.values[name] !== undefined) {
+      reportError(`Cannot reassign variable "${name}"`);
     }
 
-    state[key as string] = {
-      isMutable: stmt.__kind === 'letMutStmt',
+    this.values[name] = {
+      isMutable: mutability === 'mutable',
       value,
-      type: 'variable',
     };
   };
 
-  defineFunction = (stmt: FuncDefStmt, scope?: Scope): never | void => {
-    const key = stmt.name.literal as string;
-    const line = stmt.name.line;
+  get = (name: Token): EnvField['value'] | never => {
+    const field = this.values[name.lexeme];
 
-    const state = this.getState(scope);
-
-    if (Object.prototype.hasOwnProperty.call(state, key)) {
-      reportError('Function has already been defined', {
-        number: line,
-        string: `at "${key}"`,
-      });
+    if (field !== undefined) {
+      return field.value;
     }
 
-    if (stmt.parameters.some((param) => param.__kind !== 'variableExpr')) {
-      reportError(`Invalid parameter for function "${stmt.name.literal}"`, {
-        number: line,
-        string: 'Parameter names must start with a letter or an underscore. Reserved keywords are disallowed.',
-      });
+    if (this.enclosingEnv) {
+      return this.enclosingEnv.get(name);
     }
 
-    const parameterNames = (stmt.parameters as VariableExpr[]).map((token) => token.name.literal);
-
-    state[key] = {
-      block: stmt.block,
-      parameterNames,
-      type: 'function',
-    } as FunctionType;
+    reportError('Undefined variable', { number: name.line, string: name.lexeme });
   };
 
-  read = (key: string, scope?: Scope): FunctionType | Variable => {
-    const readFunc = scope ? this.readScoped(scope) : this.readGlobal;
-    return readFunc(key);
-  };
-
-  mutate = (stmt: ReassignmentStmt, value: Variable['value'], scope?: Scope): void => {
-    if (scope) {
-      this.mutateScoped(stmt, value, scope);
-    } else {
-      this.mutateGlobal(stmt, value);
-    }
-  };
-
-  private getState = (scope?: Scope): GlobalState | ScopedState | null => {
-    if (!scope) {
-      return this.globalState;
-    }
-
-    return this.scopedState[scope.uuid] ?? null;
-  };
-
-  private mutateGlobal = (stmt: ReassignmentStmt, value: Variable['value']): void => {
-    const key = stmt.name.literal as string;
-    const line = stmt.name.line;
-
-    const val = this.globalState[key] ?? null;
-
-    if (val === null) {
-      this.reportMissingDeclaration(line, key);
-    }
-
-    // @ts-ignore
-    if (!val.isMutable) {
-      this.reportDisallowedMutation(line, key);
-    }
-
-    // @ts-ignore
-    this.globalState[key].value = value;
-  };
-
-  private mutateScoped = (stmt: ReassignmentStmt, value: Variable['value'], scope: Scope): never | void => {
-    const key = stmt.name.literal as string;
-    const line = stmt.name.line;
-
-    const val = this.scopedState[scope.uuid]?.[key] as Variable;
-
-    if (val) {
-      if (!val.isMutable) {
-        this.reportDisallowedMutation(line, key);
+  mutate = (name: Token, value: EnvField['value']): void | never => {
+    const field = this.values[name.lexeme];
+    if (field !== undefined) {
+      if (field.isMutable) {
+        this.values[name.lexeme].value = value;
+        return;
       }
 
-      val.value = value;
+      reportError('Variable is immutable. It can be made mutable by declaring it with "let mut"', {
+        number: name.line,
+        string: name.lexeme,
+      });
+    }
+
+    if (this.enclosingEnv) {
+      this.enclosingEnv.mutate(name, value);
       return;
     }
 
-    this.mutateGlobal(stmt, value);
-  };
-
-  private readGlobal = (key: string): FunctionType | Variable => {
-    return this.globalState[key] ?? null;
-  };
-
-  private readScoped = (scope: Scope) => (key: string): FunctionType | Variable => {
-    const state = this.scopedState[scope.uuid];
-    const value = state[key] ?? null;
-    if (value) {
-      return value;
-    }
-
-    let parent = scope.parentScope;
-    while (parent) {
-      const value = this.scopedState[parent.uuid][key] ?? null;
-      if (value === null) {
-        parent = parent.parentScope;
-      } else {
-        return value;
-      }
-    }
-
-    return this.globalState[key] ?? null;
-  };
-
-  private reportDisallowedMutation = (line: number, key: Literal): void => {
-    reportError('Immutable variable cannot be mutated', {
-      number: line,
-      string: `Declare variable "${key}" with "let mut" to allow mutation.`,
-    });
-  };
-
-  private reportMissingDeclaration = (line: number, key: Literal): void => {
-    reportError('Variable needs to be declared before being assigned a value', {
-      number: line,
-      string: `Declare variable "${key}" with "let" or "let mut"`,
-    });
+    reportError('Undefined variable', { number: name.line, string: name.lexeme });
   };
 }

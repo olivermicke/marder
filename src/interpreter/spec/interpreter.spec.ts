@@ -3,15 +3,15 @@ import { Environment } from '../environment';
 
 import {
   BlockExpr,
+  CallExpr,
+  Expr,
+  ExpressionStmt,
+  FuncDefStmt,
   LetStmt,
   LetMutStmt,
   PrintStmt,
   ReassignmentStmt,
-  ExpressionStmt,
-  FuncCallExpr,
-  FuncDefStmt,
   Stmt,
-  Expr,
   VariableExpr,
 } from '../parser/types';
 import { Token } from '../scanner/types';
@@ -32,12 +32,15 @@ const createFunc = ({
   statements: Stmt[];
   parameterNames: string[];
   args: Expr[];
-}): [FuncDefStmt, FuncCallExpr, PrintStmt] => {
+}): [FuncDefStmt, CallExpr, PrintStmt] => {
   const funcName: Token = { lexeme: 'foo', line: 1, literal: 'foo', type: 'IDENTIFIER' };
-  const funcCallExpr: FuncCallExpr = {
-    __kind: 'funcCallExpr',
+  const callExpr: CallExpr = {
+    __kind: 'callExpr',
     arguments: args,
-    name: funcName,
+    callee: {
+      __kind: 'variableExpr',
+      name: funcName,
+    },
   };
 
   return [
@@ -50,10 +53,15 @@ const createFunc = ({
       name: funcName,
       parameters: parameterNames.map(createVariableExpr),
     },
-    funcCallExpr,
-    { __kind: 'printStmt', expression: funcCallExpr },
+    callExpr,
+    createPrintStmt(callExpr),
   ];
 };
+
+const createPrintStmt = (expr: Expr): PrintStmt => ({
+  __kind: 'printStmt',
+  expression: expr,
+});
 
 const createVariableExpr = (name: string): VariableExpr => ({
   __kind: 'variableExpr',
@@ -82,18 +90,13 @@ describe('interpreter', () => {
   });
 
   it('evaluates AST and returns result', () => {
-    const expected = 'Success!';
     interpret([
-      {
-        __kind: 'printStmt',
-        expression: {
-          __kind: 'literalExpr',
-          value: expected,
-        },
-      },
+      createPrintStmt({
+        __kind: 'literalExpr',
+        value: 'Hello',
+      }),
     ]);
-
-    expect(consoleLogMock).toBeCalledWith(expected);
+    expect(consoleLogMock).toBeCalledWith('Hello');
   });
 
   describe('expressions', () => {
@@ -119,20 +122,17 @@ describe('interpreter', () => {
             ['foo', 'foo', 'true'],
           ].forEach(([a, b, expected]) => {
             interpret([
-              {
-                __kind: 'printStmt',
-                expression: {
-                  __kind: 'binaryExpr',
-                  left: { __kind: 'literalExpr', value: a },
-                  operator: {
-                    lexeme: 'and',
-                    line: 1,
-                    literal: null,
-                    type: 'AND',
-                  },
-                  right: { __kind: 'literalExpr', value: b },
+              createPrintStmt({
+                __kind: 'binaryExpr',
+                left: { __kind: 'literalExpr', value: a },
+                operator: {
+                  lexeme: 'and',
+                  line: 1,
+                  literal: null,
+                  type: 'AND',
                 },
-              },
+                right: { __kind: 'literalExpr', value: b },
+              }),
             ]);
             expect(consoleLogMock).toBeCalledWith(expected);
           });
@@ -158,20 +158,17 @@ describe('interpreter', () => {
             ['foo', 'foo', 'false'],
           ].forEach(([a, b, expected]) => {
             interpret([
-              {
-                __kind: 'printStmt',
-                expression: {
-                  __kind: 'binaryExpr',
-                  left: { __kind: 'literalExpr', value: a },
-                  operator: {
-                    lexeme: '!=',
-                    line: 1,
-                    literal: null,
-                    type: 'BANG_EQUAL',
-                  },
-                  right: { __kind: 'literalExpr', value: b },
+              createPrintStmt({
+                __kind: 'binaryExpr',
+                left: { __kind: 'literalExpr', value: a },
+                operator: {
+                  lexeme: '!=',
+                  line: 1,
+                  literal: null,
+                  type: 'BANG_EQUAL',
                 },
-              },
+                right: { __kind: 'literalExpr', value: b },
+              }),
             ]);
             expect(consoleLogMock).toBeCalledWith(expected);
           });
@@ -197,20 +194,17 @@ describe('interpreter', () => {
             ['foo', 'foo', 'true'],
           ].forEach(([a, b, expected]) => {
             interpret([
-              {
-                __kind: 'printStmt',
-                expression: {
-                  __kind: 'binaryExpr',
-                  left: { __kind: 'literalExpr', value: a },
-                  operator: {
-                    lexeme: '==',
-                    line: 1,
-                    literal: null,
-                    type: 'EQUAL_EQUAL',
-                  },
-                  right: { __kind: 'literalExpr', value: b },
+              createPrintStmt({
+                __kind: 'binaryExpr',
+                left: { __kind: 'literalExpr', value: a },
+                operator: {
+                  lexeme: '==',
+                  line: 1,
+                  literal: null,
+                  type: 'EQUAL_EQUAL',
                 },
-              },
+                right: { __kind: 'literalExpr', value: b },
+              }),
             ]);
             expect(consoleLogMock).toBeCalledWith(expected);
           });
@@ -237,20 +231,17 @@ describe('interpreter', () => {
             ['foo', 'foo', PROCESS_EXIT],
           ].forEach(([a, b, expected]) => {
             interpret([
-              {
-                __kind: 'printStmt',
-                expression: {
-                  __kind: 'binaryExpr',
-                  left: { __kind: 'literalExpr', value: a },
-                  operator: {
-                    lexeme: '<',
-                    line: 1,
-                    literal: null,
-                    type: 'LESS',
-                  },
-                  right: { __kind: 'literalExpr', value: b },
+              createPrintStmt({
+                __kind: 'binaryExpr',
+                left: { __kind: 'literalExpr', value: a },
+                operator: {
+                  lexeme: '<',
+                  line: 1,
+                  literal: null,
+                  type: 'LESS',
                 },
-              },
+                right: { __kind: 'literalExpr', value: b },
+              }),
             ]);
 
             if (expected === PROCESS_EXIT) {
@@ -282,20 +273,17 @@ describe('interpreter', () => {
             ['foo', 'foo', PROCESS_EXIT],
           ].forEach(([a, b, expected]) => {
             interpret([
-              {
-                __kind: 'printStmt',
-                expression: {
-                  __kind: 'binaryExpr',
-                  left: { __kind: 'literalExpr', value: a },
-                  operator: {
-                    lexeme: '<=',
-                    line: 1,
-                    literal: null,
-                    type: 'LESS_EQUAL',
-                  },
-                  right: { __kind: 'literalExpr', value: b },
+              createPrintStmt({
+                __kind: 'binaryExpr',
+                left: { __kind: 'literalExpr', value: a },
+                operator: {
+                  lexeme: '<=',
+                  line: 1,
+                  literal: null,
+                  type: 'LESS_EQUAL',
                 },
-              },
+                right: { __kind: 'literalExpr', value: b },
+              }),
             ]);
 
             if (expected === PROCESS_EXIT) {
@@ -327,20 +315,17 @@ describe('interpreter', () => {
             ['foo', 'foo', PROCESS_EXIT],
           ].forEach(([a, b, expected]) => {
             interpret([
-              {
-                __kind: 'printStmt',
-                expression: {
-                  __kind: 'binaryExpr',
-                  left: { __kind: 'literalExpr', value: a },
-                  operator: {
-                    lexeme: '>',
-                    line: 1,
-                    literal: null,
-                    type: 'GREATER',
-                  },
-                  right: { __kind: 'literalExpr', value: b },
+              createPrintStmt({
+                __kind: 'binaryExpr',
+                left: { __kind: 'literalExpr', value: a },
+                operator: {
+                  lexeme: '>',
+                  line: 1,
+                  literal: null,
+                  type: 'GREATER',
                 },
-              },
+                right: { __kind: 'literalExpr', value: b },
+              }),
             ]);
 
             if (expected === PROCESS_EXIT) {
@@ -372,20 +357,17 @@ describe('interpreter', () => {
             ['foo', 'foo', PROCESS_EXIT],
           ].forEach(([a, b, expected]) => {
             interpret([
-              {
-                __kind: 'printStmt',
-                expression: {
-                  __kind: 'binaryExpr',
-                  left: { __kind: 'literalExpr', value: a },
-                  operator: {
-                    lexeme: '>=',
-                    line: 1,
-                    literal: null,
-                    type: 'GREATER_EQUAL',
-                  },
-                  right: { __kind: 'literalExpr', value: b },
+              createPrintStmt({
+                __kind: 'binaryExpr',
+                left: { __kind: 'literalExpr', value: a },
+                operator: {
+                  lexeme: '>=',
+                  line: 1,
+                  literal: null,
+                  type: 'GREATER_EQUAL',
                 },
-              },
+                right: { __kind: 'literalExpr', value: b },
+              }),
             ]);
 
             if (expected === PROCESS_EXIT) {
@@ -417,20 +399,17 @@ describe('interpreter', () => {
             ['foo', 'foo', PROCESS_EXIT],
           ].forEach(([a, b, expected]) => {
             interpret([
-              {
-                __kind: 'printStmt',
-                expression: {
-                  __kind: 'binaryExpr',
-                  left: { __kind: 'literalExpr', value: a },
-                  operator: {
-                    lexeme: '-',
-                    line: 1,
-                    literal: null,
-                    type: 'MINUS',
-                  },
-                  right: { __kind: 'literalExpr', value: b },
+              createPrintStmt({
+                __kind: 'binaryExpr',
+                left: { __kind: 'literalExpr', value: a },
+                operator: {
+                  lexeme: '-',
+                  line: 1,
+                  literal: null,
+                  type: 'MINUS',
                 },
-              },
+                right: { __kind: 'literalExpr', value: b },
+              }),
             ]);
 
             if (expected === PROCESS_EXIT) {
@@ -461,20 +440,17 @@ describe('interpreter', () => {
             ['foo', 'foo', 'true'],
           ].forEach(([a, b, expected]) => {
             interpret([
-              {
-                __kind: 'printStmt',
-                expression: {
-                  __kind: 'binaryExpr',
-                  left: { __kind: 'literalExpr', value: a },
-                  operator: {
-                    lexeme: 'or',
-                    line: 1,
-                    literal: null,
-                    type: 'OR',
-                  },
-                  right: { __kind: 'literalExpr', value: b },
+              createPrintStmt({
+                __kind: 'binaryExpr',
+                left: { __kind: 'literalExpr', value: a },
+                operator: {
+                  lexeme: 'or',
+                  line: 1,
+                  literal: null,
+                  type: 'OR',
                 },
-              },
+                right: { __kind: 'literalExpr', value: b },
+              }),
             ]);
             expect(consoleLogMock).toBeCalledWith(expected);
           });
@@ -501,20 +477,17 @@ describe('interpreter', () => {
             ['foo', 'foo', 'foofoo'],
           ].forEach(([a, b, expected]) => {
             interpret([
-              {
-                __kind: 'printStmt',
-                expression: {
-                  __kind: 'binaryExpr',
-                  left: { __kind: 'literalExpr', value: a },
-                  operator: {
-                    lexeme: '+',
-                    line: 1,
-                    literal: null,
-                    type: 'PLUS',
-                  },
-                  right: { __kind: 'literalExpr', value: b },
+              createPrintStmt({
+                __kind: 'binaryExpr',
+                left: { __kind: 'literalExpr', value: a },
+                operator: {
+                  lexeme: '+',
+                  line: 1,
+                  literal: null,
+                  type: 'PLUS',
                 },
-              },
+                right: { __kind: 'literalExpr', value: b },
+              }),
             ]);
 
             if (expected === PROCESS_EXIT) {
@@ -548,20 +521,17 @@ describe('interpreter', () => {
             ['foo', 'foo', PROCESS_EXIT],
           ].forEach(([a, b, expected]) => {
             interpret([
-              {
-                __kind: 'printStmt',
-                expression: {
-                  __kind: 'binaryExpr',
-                  left: { __kind: 'literalExpr', value: a },
-                  operator: {
-                    lexeme: '/',
-                    line: 1,
-                    literal: null,
-                    type: 'SLASH',
-                  },
-                  right: { __kind: 'literalExpr', value: b },
+              createPrintStmt({
+                __kind: 'binaryExpr',
+                left: { __kind: 'literalExpr', value: a },
+                operator: {
+                  lexeme: '/',
+                  line: 1,
+                  literal: null,
+                  type: 'SLASH',
                 },
-              },
+                right: { __kind: 'literalExpr', value: b },
+              }),
             ]);
 
             if (expected === PROCESS_EXIT) {
@@ -595,20 +565,17 @@ describe('interpreter', () => {
             ['foo', 'foo', PROCESS_EXIT],
           ].forEach(([a, b, expected]) => {
             interpret([
-              {
-                __kind: 'printStmt',
-                expression: {
-                  __kind: 'binaryExpr',
-                  left: { __kind: 'literalExpr', value: a },
-                  operator: {
-                    lexeme: '*',
-                    line: 1,
-                    literal: null,
-                    type: 'STAR',
-                  },
-                  right: { __kind: 'literalExpr', value: b },
+              createPrintStmt({
+                __kind: 'binaryExpr',
+                left: { __kind: 'literalExpr', value: a },
+                operator: {
+                  lexeme: '*',
+                  line: 1,
+                  literal: null,
+                  type: 'STAR',
                 },
-              },
+                right: { __kind: 'literalExpr', value: b },
+              }),
             ]);
 
             if (expected === PROCESS_EXIT) {
@@ -632,13 +599,10 @@ describe('interpreter', () => {
         const innerScope: BlockExpr = {
           __kind: 'blockExpr',
           statements: [
-            {
-              __kind: 'printStmt',
-              expression: {
-                __kind: 'variableExpr',
-                name: outerScopedVar.name,
-              },
-            },
+            createPrintStmt({
+              __kind: 'variableExpr',
+              name: outerScopedVar.name,
+            }),
           ],
         };
 
@@ -657,10 +621,10 @@ describe('interpreter', () => {
           initializer: { __kind: 'literalExpr', value: 'scoped expr' },
           name: { lexeme: 'foo', line: 1, literal: 'foo', type: 'IDENTIFIER' },
         };
-        const printStmt: PrintStmt = {
-          __kind: 'printStmt',
-          expression: { __kind: 'variableExpr', name: scopedVar.name },
-        };
+        const printStmt: PrintStmt = createPrintStmt({
+          __kind: 'variableExpr',
+          name: scopedVar.name,
+        });
 
         const block: ExpressionStmt = {
           __kind: 'expressionStmt',
@@ -681,11 +645,11 @@ describe('interpreter', () => {
           initializer: { __kind: 'literalExpr', value: 'bar' },
           name: { lexeme: 'foo', line: 1, literal: 'foo', type: 'IDENTIFIER' },
         };
+        const printStmt: PrintStmt = createPrintStmt({
+          __kind: 'variableExpr',
+          name: globalVar.name,
+        });
 
-        const printStmt: PrintStmt = {
-          __kind: 'printStmt',
-          expression: { __kind: 'variableExpr', name: globalVar.name },
-        };
         const block: ExpressionStmt = {
           __kind: 'expressionStmt',
           expression: {
@@ -704,10 +668,10 @@ describe('interpreter', () => {
           initializer: { __kind: 'literalExpr', value: 'bar' },
           name: { lexeme: 'foo', line: 1, literal: 'foo', type: 'IDENTIFIER' },
         };
-        const printGlobalVar: PrintStmt = {
-          __kind: 'printStmt',
-          expression: { __kind: 'variableExpr', name: globalVar.name },
-        };
+        const printGlobalVar: PrintStmt = createPrintStmt({
+          __kind: 'variableExpr',
+          name: globalVar.name,
+        });
 
         const reassignmentStmt: ReassignmentStmt = {
           __kind: 'reassignmentStmt',
@@ -742,10 +706,7 @@ describe('interpreter', () => {
             },
           ],
         };
-        const printBlockValue: PrintStmt = {
-          __kind: 'printStmt',
-          expression: blockExpr,
-        };
+        const printBlockValue: PrintStmt = createPrintStmt(blockExpr);
 
         interpret([printBlockValue]);
         expect(consoleLogMock).toBeCalledWith('foo');
@@ -762,10 +723,7 @@ describe('interpreter', () => {
           expression: { __kind: 'literalExpr', value: 'mutated' },
           name: scopedVar.name,
         };
-        const printStmt: PrintStmt = {
-          __kind: 'printStmt',
-          expression: { __kind: 'variableExpr', name: scopedVar.name },
-        };
+        const printStmt: PrintStmt = createPrintStmt({ __kind: 'variableExpr', name: scopedVar.name });
 
         const block: ExpressionStmt = {
           __kind: 'expressionStmt',
@@ -780,33 +738,7 @@ describe('interpreter', () => {
       });
     });
 
-    describe('function call expressions', () => {
-      test('allow only variableExpr as parameters', () => {
-        const funcDefStmt: FuncDefStmt = {
-          __kind: 'funcDefStmt',
-          block: {
-            __kind: 'blockExpr',
-            statements: [],
-          },
-          name: {
-            lexeme: 'foo',
-            line: 1,
-            literal: 'foo',
-            type: 'IDENTIFIER',
-          },
-          parameters: [
-            {
-              // @ts-ignore
-              __kind: 'literalExpr',
-              value: 'true',
-            },
-          ],
-        };
-
-        interpret([funcDefStmt]);
-        expect(processExitMock).toBeCalledWith(1);
-      });
-
+    describe('call expressions', () => {
       test('detect clash between parameters and local variables when called', () => {
         const [funcDefStmt, , printFuncStmt] = createFunc({
           args: [],
@@ -828,36 +760,24 @@ describe('interpreter', () => {
       });
 
       test('raise error when more args than parameters', () => {
-        const [funcDefStmt, funcCallExpr] = createFunc({
+        const [funcDefStmt, callExpr] = createFunc({
           args: [{ __kind: 'literalExpr', value: 100 }],
           parameterNames: [],
           statements: [],
         });
 
-        interpret([
-          funcDefStmt,
-          {
-            __kind: 'printStmt',
-            expression: funcCallExpr,
-          },
-        ]);
+        interpret([funcDefStmt, createPrintStmt(callExpr)]);
         expect(processExitMock).toBeCalledWith(1);
       });
 
       test('raise error when more parameters than args', () => {
-        const [funcDefStmt, funcCallExpr] = createFunc({
+        const [funcDefStmt, callExpr] = createFunc({
           args: [],
           parameterNames: ['n'],
           statements: [],
         });
 
-        interpret([
-          funcDefStmt,
-          {
-            __kind: 'printStmt',
-            expression: funcCallExpr,
-          },
-        ]);
+        interpret([funcDefStmt, createPrintStmt(callExpr)]);
         expect(processExitMock).toBeCalledWith(1);
       });
 
@@ -949,13 +869,16 @@ describe('interpreter', () => {
                   {
                     __kind: 'expressionStmt',
                     expression: {
-                      __kind: 'funcCallExpr',
+                      __kind: 'callExpr',
                       arguments: [],
-                      name: {
-                        lexeme: 'fn',
-                        line: 2,
-                        literal: 'fn',
-                        type: 'IDENTIFIER',
+                      callee: {
+                        __kind: 'variableExpr',
+                        name: {
+                          lexeme: 'fn',
+                          line: 2,
+                          literal: 'fn',
+                          type: 'IDENTIFIER',
+                        },
                       },
                     },
                   },
@@ -1001,21 +924,21 @@ describe('interpreter', () => {
               },
               parameters: [],
             },
-            {
-              __kind: 'printStmt',
-              expression: {
-                __kind: 'funcCallExpr',
-                arguments: [
-                  {
-                    __kind: 'variableExpr',
-                    name: {
-                      lexeme: 'greet',
-                      line: 9,
-                      literal: 'greet',
-                      type: 'IDENTIFIER',
-                    },
+            createPrintStmt({
+              __kind: 'callExpr',
+              arguments: [
+                {
+                  __kind: 'variableExpr',
+                  name: {
+                    lexeme: 'greet',
+                    line: 9,
+                    literal: 'greet',
+                    type: 'IDENTIFIER',
                   },
-                ],
+                },
+              ],
+              callee: {
+                __kind: 'variableExpr',
                 name: {
                   lexeme: 'call',
                   line: 9,
@@ -1023,9 +946,80 @@ describe('interpreter', () => {
                   type: 'IDENTIFIER',
                 },
               },
-            },
+            }),
           ]);
           expect(consoleLogMock).toBeCalledWith('Hello!');
+        });
+
+        test('calling function on function callees', () => {
+          /*
+            func foo() {
+              func bar() {
+                "Hello";
+              };
+
+              bar;
+            };
+
+            print foo()();
+          */
+
+          interpret([
+            {
+              __kind: 'funcDefStmt',
+              block: {
+                __kind: 'blockExpr',
+                statements: [
+                  {
+                    __kind: 'funcDefStmt',
+                    block: {
+                      __kind: 'blockExpr',
+                      statements: [{ __kind: 'expressionStmt', expression: { __kind: 'literalExpr', value: 'Hello' } }],
+                    },
+                    name: {
+                      lexeme: 'bar',
+                      line: 1,
+                      literal: 'bar',
+                      type: 'IDENTIFIER',
+                    },
+                    parameters: [],
+                  },
+                  {
+                    __kind: 'expressionStmt',
+                    expression: {
+                      __kind: 'variableExpr',
+                      name: {
+                        lexeme: 'bar',
+                        line: 1,
+                        literal: 'bar',
+                        type: 'IDENTIFIER',
+                      },
+                    },
+                  },
+                ],
+              },
+              name: { lexeme: 'foo', line: 1, literal: 'foo', type: 'IDENTIFIER' },
+              parameters: [],
+            },
+            createPrintStmt({
+              __kind: 'callExpr',
+              arguments: [],
+              callee: {
+                __kind: 'callExpr',
+                arguments: [],
+                callee: {
+                  __kind: 'variableExpr',
+                  name: {
+                    lexeme: 'foo',
+                    line: 1,
+                    literal: 'foo',
+                    type: 'IDENTIFIER',
+                  },
+                },
+              },
+            }),
+          ]);
+          expect(consoleLogMock).toBeCalledWith('Hello');
         });
 
         test('nesting functions', () => {
@@ -1076,13 +1070,16 @@ describe('interpreter', () => {
                   {
                     __kind: 'expressionStmt',
                     expression: {
-                      __kind: 'funcCallExpr',
+                      __kind: 'callExpr',
                       arguments: [],
-                      name: {
-                        lexeme: 'inner',
-                        line: 6,
-                        literal: 'inner',
-                        type: 'IDENTIFIER',
+                      callee: {
+                        __kind: 'variableExpr',
+                        name: {
+                          lexeme: 'inner',
+                          line: 6,
+                          literal: 'inner',
+                          type: 'IDENTIFIER',
+                        },
                       },
                     },
                   },
@@ -1106,16 +1103,16 @@ describe('interpreter', () => {
                 },
               ],
             },
-            {
-              __kind: 'printStmt',
-              expression: {
-                __kind: 'funcCallExpr',
-                arguments: [
-                  {
-                    __kind: 'literalExpr',
-                    value: 'foo',
-                  },
-                ],
+            createPrintStmt({
+              __kind: 'callExpr',
+              arguments: [
+                {
+                  __kind: 'literalExpr',
+                  value: 'foo',
+                },
+              ],
+              callee: {
+                __kind: 'variableExpr',
                 name: {
                   lexeme: 'outer',
                   line: 9,
@@ -1123,12 +1120,12 @@ describe('interpreter', () => {
                   type: 'IDENTIFIER',
                 },
               },
-            },
+            }),
           ]);
           expect(consoleLogMock).toBeCalledWith('foo');
         });
 
-        test.only('binding funcs to vars', () => {
+        test('binding funcs to variables', () => {
           interpret([
             {
               __kind: 'funcDefStmt',
@@ -1198,16 +1195,16 @@ describe('interpreter', () => {
                 type: 'IDENTIFIER',
               },
             },
-            {
-              __kind: 'printStmt',
-              expression: {
-                __kind: 'funcCallExpr',
-                arguments: [
-                  {
-                    __kind: 'literalExpr',
-                    value: 3,
-                  },
-                ],
+            createPrintStmt({
+              __kind: 'callExpr',
+              arguments: [
+                {
+                  __kind: 'literalExpr',
+                  value: 3,
+                },
+              ],
+              callee: {
+                __kind: 'variableExpr',
                 name: {
                   lexeme: 'd',
                   line: 6,
@@ -1215,113 +1212,9 @@ describe('interpreter', () => {
                   type: 'IDENTIFIER',
                 },
               },
-            },
+            }),
           ]);
           expect(consoleLogMock).toBeCalledWith('6');
-        });
-
-        test.skip('foo', () => {
-          interpret([
-            {
-              __kind: 'funcDefStmt',
-              block: {
-                __kind: 'blockExpr',
-                statements: [
-                  {
-                    __kind: 'letStmt',
-                    initializer: {
-                      __kind: 'literalExpr',
-                      value: 'outside',
-                    },
-                    name: {
-                      lexeme: 'outside',
-                      line: 2,
-                      literal: 'outside',
-                      type: 'IDENTIFIER',
-                    },
-                  },
-                  {
-                    __kind: 'funcDefStmt',
-                    block: {
-                      __kind: 'blockExpr',
-                      statements: [
-                        {
-                          __kind: 'printStmt',
-                          expression: {
-                            __kind: 'variableExpr',
-                            name: {
-                              lexeme: 'outside',
-                              line: 5,
-                              literal: 'outside',
-                              type: 'IDENTIFIER',
-                            },
-                          },
-                        },
-                      ],
-                    },
-                    name: {
-                      lexeme: 'inner',
-                      line: 4,
-                      literal: 'inner',
-                      type: 'IDENTIFIER',
-                    },
-                    parameters: [],
-                  },
-                  {
-                    __kind: 'expressionStmt',
-                    expression: {
-                      __kind: 'variableExpr',
-                      name: {
-                        lexeme: 'inner',
-                        line: 8,
-                        literal: 'inner',
-                        type: 'IDENTIFIER',
-                      },
-                    },
-                  },
-                ],
-              },
-              name: {
-                lexeme: 'returnFunction',
-                line: 1,
-                literal: 'returnFunction',
-                type: 'IDENTIFIER',
-              },
-              parameters: [],
-            },
-            {
-              __kind: 'letStmt',
-              initializer: {
-                __kind: 'funcCallExpr',
-                arguments: [],
-                name: {
-                  lexeme: 'returnFunction',
-                  line: 11,
-                  literal: 'returnFunction',
-                  type: 'IDENTIFIER',
-                },
-              },
-              name: {
-                lexeme: 'fn',
-                line: 11,
-                literal: 'fn',
-                type: 'IDENTIFIER',
-              },
-            },
-            {
-              __kind: 'expressionStmt',
-              expression: {
-                __kind: 'funcCallExpr',
-                arguments: [],
-                name: {
-                  lexeme: 'fn',
-                  line: 12,
-                  literal: 'fn',
-                  type: 'IDENTIFIER',
-                },
-              },
-            },
-          ]);
         });
       });
     });
@@ -1331,31 +1224,28 @@ describe('interpreter', () => {
         // (2 + 2) * 2
         const expected = '8';
         interpret([
-          {
-            __kind: 'printStmt',
-            expression: {
-              __kind: 'binaryExpr',
-              left: {
-                __kind: 'groupingExpr',
-                expression: {
-                  __kind: 'binaryExpr',
-                  left: { __kind: 'literalExpr', value: 2 },
-                  operator: { lexeme: '+', line: 1, literal: null, type: 'PLUS' },
-                  right: { __kind: 'literalExpr', value: 2 },
-                },
-              },
-              operator: {
-                lexeme: '*',
-                line: 1,
-                literal: null,
-                type: 'STAR',
-              },
-              right: {
-                __kind: 'literalExpr',
-                value: 2,
+          createPrintStmt({
+            __kind: 'binaryExpr',
+            left: {
+              __kind: 'groupingExpr',
+              expression: {
+                __kind: 'binaryExpr',
+                left: { __kind: 'literalExpr', value: 2 },
+                operator: { lexeme: '+', line: 1, literal: null, type: 'PLUS' },
+                right: { __kind: 'literalExpr', value: 2 },
               },
             },
-          },
+            operator: {
+              lexeme: '*',
+              line: 1,
+              literal: null,
+              type: 'STAR',
+            },
+            right: {
+              __kind: 'literalExpr',
+              value: 2,
+            },
+          }),
         ]);
         expect(consoleLogMock).toBeCalledWith(expected);
       });
@@ -1363,9 +1253,8 @@ describe('interpreter', () => {
 
     describe('if expressions', () => {
       describe('single if branch', () => {
-        const createPrintIfExpr = (conditionValue: boolean | string): PrintStmt => ({
-          __kind: 'printStmt',
-          expression: {
+        const createPrintIfExpr = (conditionValue: boolean | string): PrintStmt =>
+          createPrintStmt({
             __kind: 'ifExpr',
             branches: [
               {
@@ -1384,8 +1273,7 @@ describe('interpreter', () => {
                 condition: { __kind: 'literalExpr', value: conditionValue },
               },
             ],
-          },
-        });
+          });
 
         test('is evaluated when it should', () => {
           interpret([createPrintIfExpr('true')]);
@@ -1408,49 +1296,46 @@ describe('interpreter', () => {
             };
           */
           interpret([
-            {
-              __kind: 'printStmt',
-              expression: {
-                __kind: 'ifExpr',
-                branches: [
-                  {
-                    block: {
-                      __kind: 'blockExpr',
-                      statements: [
-                        {
-                          __kind: 'expressionStmt',
-                          expression: {
-                            __kind: 'literalExpr',
-                            value: 'foo',
-                          },
+            createPrintStmt({
+              __kind: 'ifExpr',
+              branches: [
+                {
+                  block: {
+                    __kind: 'blockExpr',
+                    statements: [
+                      {
+                        __kind: 'expressionStmt',
+                        expression: {
+                          __kind: 'literalExpr',
+                          value: 'foo',
                         },
-                      ],
-                    },
-                    condition: {
-                      __kind: 'binaryExpr',
-                      left: { __kind: 'literalExpr', value: 3 },
-                      operator: { lexeme: '<=', line: 1, literal: null, type: 'LESS_EQUAL' },
-                      right: { __kind: 'literalExpr', value: 2 },
-                    },
+                      },
+                    ],
                   },
-                  {
-                    block: {
-                      __kind: 'blockExpr',
-                      statements: [
-                        {
-                          __kind: 'expressionStmt',
-                          expression: {
-                            __kind: 'literalExpr',
-                            value: 'bar',
-                          },
+                  condition: {
+                    __kind: 'binaryExpr',
+                    left: { __kind: 'literalExpr', value: 3 },
+                    operator: { lexeme: '<=', line: 1, literal: null, type: 'LESS_EQUAL' },
+                    right: { __kind: 'literalExpr', value: 2 },
+                  },
+                },
+                {
+                  block: {
+                    __kind: 'blockExpr',
+                    statements: [
+                      {
+                        __kind: 'expressionStmt',
+                        expression: {
+                          __kind: 'literalExpr',
+                          value: 'bar',
                         },
-                      ],
-                    },
-                    condition: { __kind: 'literalExpr', value: true },
+                      },
+                    ],
                   },
-                ],
-              },
-            },
+                  condition: { __kind: 'literalExpr', value: true },
+                },
+              ],
+            }),
           ]);
           expect(consoleLogMock).toBeCalledWith('bar');
         });
@@ -1464,47 +1349,44 @@ describe('interpreter', () => {
             };
           */
           interpret([
-            {
-              __kind: 'printStmt',
-              expression: {
-                __kind: 'ifExpr',
-                branches: [
-                  {
-                    block: {
-                      __kind: 'blockExpr',
-                      statements: [
-                        {
-                          __kind: 'expressionStmt',
-                          expression: {
-                            __kind: 'literalExpr',
-                            value: 'foo',
-                          },
+            createPrintStmt({
+              __kind: 'ifExpr',
+              branches: [
+                {
+                  block: {
+                    __kind: 'blockExpr',
+                    statements: [
+                      {
+                        __kind: 'expressionStmt',
+                        expression: {
+                          __kind: 'literalExpr',
+                          value: 'foo',
                         },
-                      ],
-                    },
-                    condition: {
-                      __kind: 'literalExpr',
-                      value: false,
-                    },
+                      },
+                    ],
                   },
-                  {
-                    block: {
-                      __kind: 'blockExpr',
-                      statements: [
-                        {
-                          __kind: 'expressionStmt',
-                          expression: {
-                            __kind: 'literalExpr',
-                            value: 'bar',
-                          },
+                  condition: {
+                    __kind: 'literalExpr',
+                    value: false,
+                  },
+                },
+                {
+                  block: {
+                    __kind: 'blockExpr',
+                    statements: [
+                      {
+                        __kind: 'expressionStmt',
+                        expression: {
+                          __kind: 'literalExpr',
+                          value: 'bar',
                         },
-                      ],
-                    },
-                    condition: null,
+                      },
+                    ],
                   },
-                ],
-              },
-            },
+                  condition: null,
+                },
+              ],
+            }),
           ]);
           expect(consoleLogMock).toBeCalledWith('bar');
         });
@@ -1521,13 +1403,10 @@ describe('interpreter', () => {
         ${'false'} | ${'false'}
       `('literal expression "$literal" is correctly stringified', ({ literal, expected }) => {
         interpret([
-          {
-            __kind: 'printStmt',
-            expression: {
-              __kind: 'literalExpr',
-              value: literal,
-            },
-          },
+          createPrintStmt({
+            __kind: 'literalExpr',
+            value: literal,
+          }),
         ]);
         expect(consoleLogMock).toBeCalledWith(expected);
       });
@@ -1543,17 +1422,14 @@ describe('interpreter', () => {
         ${'foo'}   | ${'false'}
       `('unary "!" works correctly with literal "$literal"', ({ literal, expected }) => {
         interpret([
-          {
-            __kind: 'printStmt',
-            expression: {
-              __kind: 'unaryExpr',
-              operator: { lexeme: '!', line: 1, literal: null, type: 'BANG' },
-              right: {
-                __kind: 'literalExpr',
-                value: literal,
-              },
+          createPrintStmt({
+            __kind: 'unaryExpr',
+            operator: { lexeme: '!', line: 1, literal: null, type: 'BANG' },
+            right: {
+              __kind: 'literalExpr',
+              value: literal,
             },
-          },
+          }),
         ]);
         expect(consoleLogMock).toBeCalledWith(expected);
       });
@@ -1570,17 +1446,14 @@ describe('interpreter', () => {
         ${'foo'}   | ${PROCESS_EXIT}
       `('unary "-" works correctly with literal "$literal"', ({ literal, expected }) => {
         interpret([
-          {
-            __kind: 'printStmt',
-            expression: {
-              __kind: 'unaryExpr',
-              operator: { lexeme: '-', line: 1, literal: null, type: 'MINUS' },
-              right: {
-                __kind: 'literalExpr',
-                value: literal,
-              },
+          createPrintStmt({
+            __kind: 'unaryExpr',
+            operator: { lexeme: '-', line: 1, literal: null, type: 'MINUS' },
+            right: {
+              __kind: 'literalExpr',
+              value: literal,
             },
-          },
+          }),
         ]);
         if (expected === PROCESS_EXIT) {
           expect(processExitMock).toBeCalledWith(1);
@@ -1594,7 +1467,8 @@ describe('interpreter', () => {
   describe('statements', () => {
     describe('expression statements', () => {
       test('can be printed', () => {
-        interpret([{ __kind: 'printStmt', expression: { __kind: 'literalExpr', value: 'foo' } }]);
+        interpret([createPrintStmt({ __kind: 'literalExpr', value: 'foo' })]);
+
         expect(consoleLogMock).toBeCalledWith('foo');
       });
 
@@ -1607,7 +1481,7 @@ describe('interpreter', () => {
               value: 'Success!',
             },
           },
-          new Environment(),
+          new Environment({ enclosingEnv: null }),
         );
         expect(value).toEqual('Success!');
       });
@@ -1643,17 +1517,14 @@ describe('interpreter', () => {
       });
 
       test('do not yield another statement', () => {
-        expect(evaluate(letStmt, new Environment())).toEqual(null);
+        expect(evaluate(letStmt, new Environment({ enclosingEnv: null }))).toEqual(null);
       });
 
       test('initialize a variable which can be used as expression', () => {
-        const printStmt: PrintStmt = {
-          __kind: 'printStmt',
-          expression: {
-            __kind: 'variableExpr',
-            name: letStmt.name,
-          },
-        };
+        const printStmt: PrintStmt = createPrintStmt({
+          __kind: 'variableExpr',
+          name: letStmt.name,
+        });
 
         interpret([letStmt, printStmt]);
         expect(consoleLogMock).toBeCalledWith((letStmt as any).initializer.value);
@@ -1673,13 +1544,10 @@ describe('interpreter', () => {
           expression: { __kind: 'literalExpr', value: 'mutated' },
           name: { lexeme: letMutStmt.name.lexeme, line: 1, literal: letMutStmt.name.literal, type: 'IDENTIFIER' },
         };
-        const printStmt: PrintStmt = {
-          __kind: 'printStmt',
-          expression: {
-            __kind: 'variableExpr',
-            name: letMutStmt.name,
-          },
-        };
+        const printStmt: PrintStmt = createPrintStmt({
+          __kind: 'variableExpr',
+          name: letMutStmt.name,
+        });
 
         interpret([letMutStmt, mutationStatement, printStmt]);
         expect(consoleLogMock).toBeCalledWith('mutated');
@@ -1697,17 +1565,14 @@ describe('interpreter', () => {
       });
 
       test('do not yield another statement', () => {
-        expect(evaluate(letMutStmt, new Environment())).toEqual(null);
+        expect(evaluate(letMutStmt, new Environment({ enclosingEnv: null }))).toEqual(null);
       });
 
       test('initialize a variable which can be used as expression', () => {
-        const printStmt: PrintStmt = {
-          __kind: 'printStmt',
-          expression: {
-            __kind: 'variableExpr',
-            name: letMutStmt.name,
-          },
-        };
+        const printStmt: PrintStmt = createPrintStmt({
+          __kind: 'variableExpr',
+          name: letMutStmt.name,
+        });
 
         interpret([letMutStmt, printStmt]);
         expect(consoleLogMock).toBeCalledWith((letMutStmt as any).initializer.value);
@@ -1715,16 +1580,13 @@ describe('interpreter', () => {
     });
 
     describe('print statements', () => {
-      const printStatement: PrintStmt = {
-        __kind: 'printStmt',
-        expression: {
-          __kind: 'literalExpr',
-          value: 'foo',
-        },
-      };
+      const printStatement: PrintStmt = createPrintStmt({
+        __kind: 'literalExpr',
+        value: 'foo',
+      });
 
       test('do not yield another statement', () => {
-        expect(evaluate(printStatement, new Environment())).toEqual(null);
+        expect(evaluate(printStatement, new Environment({ enclosingEnv: null }))).toEqual(null);
       });
 
       test('log the expression', () => {

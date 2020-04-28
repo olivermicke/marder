@@ -1,6 +1,6 @@
 import { Parser } from '../parser';
 
-import { Expr, Stmt, BlockExpr } from '../types';
+import { BlockExpr, Expr, Stmt } from '../types';
 import { Token } from '../../scanner/types';
 
 const EOF_TOKEN: Token = { lexeme: 'EOF', line: 1, literal: null, type: 'EOF' };
@@ -45,7 +45,7 @@ describe('parser', () => {
     jest.clearAllMocks();
   });
 
-  test.only('binding func too var', () => {
+  test('binding func to variable', () => {
     const tokens: Token[] = [
       {
         lexeme: 'func',
@@ -366,9 +366,12 @@ describe('parser', () => {
       describe('calls with parens', () => {
         test('without arguments', () => {
           expect(createValidExpression(funcIdentifier, LEFT_PAREN_TOKEN, RIGHT_PAREN_TOKEN)).toEqual({
-            __kind: 'funcCallExpr',
+            __kind: 'callExpr',
             arguments: [],
-            name: funcIdentifier,
+            callee: {
+              __kind: 'variableExpr',
+              name: funcIdentifier,
+            },
           });
         });
 
@@ -376,14 +379,17 @@ describe('parser', () => {
           const arg: Token = { lexeme: '1', line: 1, literal: 1, type: 'NUMBER' };
 
           expect(createValidExpression(funcIdentifier, LEFT_PAREN_TOKEN, arg, RIGHT_PAREN_TOKEN)).toEqual({
-            __kind: 'funcCallExpr',
+            __kind: 'callExpr',
             arguments: [
               {
                 __kind: 'literalExpr',
                 value: 1,
               },
             ],
-            name: funcIdentifier,
+            callee: {
+              __kind: 'variableExpr',
+              name: funcIdentifier,
+            },
           });
         });
 
@@ -394,7 +400,7 @@ describe('parser', () => {
           expect(
             createValidExpression(funcIdentifier, LEFT_PAREN_TOKEN, argOne, COMMA_TOKEN, argTwo, RIGHT_PAREN_TOKEN),
           ).toEqual({
-            __kind: 'funcCallExpr',
+            __kind: 'callExpr',
             arguments: [
               {
                 __kind: 'literalExpr',
@@ -405,7 +411,48 @@ describe('parser', () => {
                 value: 'nil',
               },
             ],
-            name: funcIdentifier,
+            callee: {
+              __kind: 'variableExpr',
+              name: funcIdentifier,
+            },
+          });
+        });
+
+        test('on callee', () => {
+          const tokenOne: Token = { lexeme: 'one', line: 1, literal: 'one', type: 'IDENTIFIER' };
+          const tokenTwo: Token = { lexeme: 'two', line: 1, literal: 'two', type: 'IDENTIFIER' };
+
+          expect(
+            createValidExpression(
+              funcIdentifier,
+              LEFT_PAREN_TOKEN,
+              tokenOne,
+              RIGHT_PAREN_TOKEN,
+              LEFT_PAREN_TOKEN,
+              tokenTwo,
+              RIGHT_PAREN_TOKEN,
+            ),
+          ).toEqual({
+            __kind: 'callExpr',
+            arguments: [
+              {
+                __kind: 'variableExpr',
+                name: tokenOne,
+              },
+            ],
+            callee: {
+              __kind: 'callExpr',
+              arguments: [
+                {
+                  __kind: 'variableExpr',
+                  name: tokenTwo,
+                },
+              ],
+              callee: {
+                __kind: 'variableExpr',
+                name: funcIdentifier,
+              },
+            },
           });
         });
       });
@@ -416,9 +463,12 @@ describe('parser', () => {
             const arg: Token = { lexeme: '3', line: 1, literal: 3, type: 'NUMBER' };
 
             expect(createValidExpression(arg, PIPE_TOKEN, funcIdentifier)).toEqual({
-              __kind: 'funcCallExpr',
+              __kind: 'callExpr',
               arguments: [{ __kind: 'literalExpr', value: 3 }],
-              name: funcIdentifier,
+              callee: {
+                __kind: 'variableExpr',
+                name: funcIdentifier,
+              },
             });
           });
 
@@ -429,15 +479,25 @@ describe('parser', () => {
             const arg: Token = { lexeme: '3', line: 1, literal: 3, type: 'NUMBER' };
 
             expect(createValidExpression(arg, PIPE_TOKEN, double, PIPE_TOKEN, addTwo)).toEqual({
-              __kind: 'funcCallExpr',
+              __kind: 'callExpr',
               arguments: [
-                { __kind: 'funcCallExpr', arguments: [{ __kind: 'literalExpr', value: arg.literal }], name: double },
+                {
+                  __kind: 'callExpr',
+                  arguments: [{ __kind: 'literalExpr', value: arg.literal }],
+                  callee: {
+                    __kind: 'variableExpr',
+                    name: double,
+                  },
+                },
               ],
-              name: addTwo,
+              callee: {
+                __kind: 'variableExpr',
+                name: addTwo,
+              },
             });
           });
 
-          test('triple', () => {
+          test('triple pipe', () => {
             const double: Token = { lexeme: 'double', line: 1, literal: 'double', type: 'IDENTIFIER' };
             const addTwo: Token = { lexeme: 'add_two', line: 1, literal: 'add_two', type: 'IDENTIFIER' };
             const triple: Token = { lexeme: 'triple', line: 1, literal: 'triple', type: 'IDENTIFIER' };
@@ -445,21 +505,30 @@ describe('parser', () => {
             const arg: Token = { lexeme: '3', line: 1, literal: 3, type: 'NUMBER' };
 
             expect(createValidExpression(arg, PIPE_TOKEN, double, PIPE_TOKEN, addTwo, PIPE_TOKEN, triple)).toEqual({
-              __kind: 'funcCallExpr',
+              __kind: 'callExpr',
               arguments: [
                 {
-                  __kind: 'funcCallExpr',
+                  __kind: 'callExpr',
                   arguments: [
                     {
-                      __kind: 'funcCallExpr',
+                      __kind: 'callExpr',
                       arguments: [{ __kind: 'literalExpr', value: arg.literal }],
-                      name: double,
+                      callee: {
+                        __kind: 'variableExpr',
+                        name: double,
+                      },
                     },
                   ],
-                  name: addTwo,
+                  callee: {
+                    __kind: 'variableExpr',
+                    name: addTwo,
+                  },
                 },
               ],
-              name: triple,
+              callee: {
+                __kind: 'variableExpr',
+                name: triple,
+              },
             });
           });
         });
@@ -472,12 +541,15 @@ describe('parser', () => {
 
             expect(createValidExpression(argTwo, PIPE_TOKEN, add, LEFT_PAREN_TOKEN, argOne, RIGHT_PAREN_TOKEN)).toEqual(
               {
-                __kind: 'funcCallExpr',
+                __kind: 'callExpr',
                 arguments: [
                   { __kind: 'literalExpr', value: 2 },
                   { __kind: 'literalExpr', value: 1 },
                 ],
-                name: { lexeme: 'add', line: 1, literal: 'add', type: 'IDENTIFIER' },
+                callee: {
+                  __kind: 'variableExpr',
+                  name: { lexeme: 'add', line: 1, literal: 'add', type: 'IDENTIFIER' },
+                },
               },
             );
           });
@@ -504,19 +576,25 @@ describe('parser', () => {
                 RIGHT_PAREN_TOKEN,
               ),
             ).toEqual({
-              __kind: 'funcCallExpr',
+              __kind: 'callExpr',
               arguments: [
                 {
-                  __kind: 'funcCallExpr',
+                  __kind: 'callExpr',
                   arguments: [
                     { __kind: 'literalExpr', value: 3 },
                     { __kind: 'literalExpr', value: 2 },
                   ],
-                  name: { lexeme: 'add', line: 1, literal: 'add', type: 'IDENTIFIER' },
+                  callee: {
+                    __kind: 'variableExpr',
+                    name: { lexeme: 'add', line: 1, literal: 'add', type: 'IDENTIFIER' },
+                  },
                 },
                 { __kind: 'literalExpr', value: 1 },
               ],
-              name: { lexeme: 'mult', line: 1, literal: 'mult', type: 'IDENTIFIER' },
+              callee: {
+                __kind: 'variableExpr',
+                name: { lexeme: 'mult', line: 1, literal: 'mult', type: 'IDENTIFIER' },
+              },
             });
           });
 
@@ -545,20 +623,26 @@ describe('parser', () => {
                 RIGHT_PAREN_TOKEN,
               ),
             ).toEqual({
-              __kind: 'funcCallExpr',
+              __kind: 'callExpr',
               arguments: [
                 {
-                  __kind: 'funcCallExpr',
+                  __kind: 'callExpr',
                   arguments: [
                     { __kind: 'literalExpr', value: 4 },
                     { __kind: 'literalExpr', value: 3 },
                   ],
-                  name: { lexeme: 'add', line: 1, literal: 'add', type: 'IDENTIFIER' },
+                  callee: {
+                    __kind: 'variableExpr',
+                    name: { lexeme: 'add', line: 1, literal: 'add', type: 'IDENTIFIER' },
+                  },
                 },
                 { __kind: 'literalExpr', value: 2 },
                 { __kind: 'literalExpr', value: 1 },
               ],
-              name: { lexeme: 'mult', line: 1, literal: 'mult', type: 'IDENTIFIER' },
+              callee: {
+                __kind: 'variableExpr',
+                name: { lexeme: 'mult', line: 1, literal: 'mult', type: 'IDENTIFIER' },
+              },
             });
           });
         });

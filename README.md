@@ -36,6 +36,16 @@ TODO:
 
 `false` and `nil` are not truthy. Every other expression is truthy.
 
+### Operators
+
+Instead of `||` and `&&`, `or` and `and` are used. Currently, both expressions inside both respective operators are evaluated no matter if the first expression is truthy/falsy. This will be changed with future versions.
+
+    func foo() {
+      print "called foo";
+    };
+
+    false and foo(); // Current behaviour: `called foo` is printed
+
 ### Variables
 
 Immutable variables are declared with `let`, mutable variables are declared with `let mut`.
@@ -108,7 +118,6 @@ Functions can be passed as arguments
 
     call(greet); // Prints "Hi"
 
-TODO:
 Functions can be bound to variables
 
     func double(n) {
@@ -118,8 +127,19 @@ Functions can be bound to variables
     let d = double;
     print d(3); // Prints `6`
 
-TODO:
-Closures
+Closures are also supported.
+
+    func returnFunction() {
+      let outside = "outside";
+
+      func inner() {
+        print outside;
+      };
+
+      inner;
+    };
+
+    returnFunction()(); // prints "outside"
 
 ### Control Flow
 

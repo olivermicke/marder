@@ -1,20 +1,16 @@
-import { v4 as uuidv4 } from 'uuid';
-
 import { reportError } from '../utils/report-error';
 
 import { Environment } from './environment';
 import {
   BinaryExpr,
-  BlockExpr,
   Expr,
   FuncDefStmt,
   GroupingExpr,
-  LetStmt,
   Literal,
   LiteralExpr,
-  Scope,
   Stmt,
   UnaryExpr,
+  VariableExpr,
 } from './parser/types';
 import { Token } from './scanner/types';
 
@@ -24,7 +20,7 @@ type Val = boolean | number | string | 'nil' | 'true' | 'false';
 
 export const interpret = (statements: Stmt[]): void | never => {
   try {
-    const environment = new Environment();
+    const environment = new Environment({ enclosingEnv: null });
 
     statements.forEach((statement: Stmt): void => {
       evaluate(statement, environment);
@@ -33,94 +29,105 @@ export const interpret = (statements: Stmt[]): void | never => {
   } catch (_error) {}
 };
 
-export const evaluate = (val: Expr | Stmt, environment: Environment, scope: Scope | null = null): any => {
+export const createFunc = (
+  stmt: FuncDefStmt,
+  closure: Environment,
+): { arity: number; call: (args: Literal[], callee: Expr) => Expr } => {
+  const arity = stmt.parameters.length;
+
+  return {
+    arity,
+    call: (args: Literal[], callee: Expr): Expr => {
+      if (arity !== args.length) {
+        let errorMsg: string;
+        if (arity > args.length) {
+          errorMsg = 'Missing argument';
+        } else {
+          errorMsg = 'Too many arguments';
+        }
+        reportError(errorMsg, {
+          number: (callee as any).name.line,
+          string: `Function "${(callee as any).name.lexeme}"`,
+        });
+      }
+
+      const environment = new Environment({ enclosingEnv: closure });
+
+      for (let i = 0; i < stmt.parameters.length; i++) {
+        const param: VariableExpr = stmt.parameters[i];
+        const value = args[i];
+        environment.define(param.name.lexeme, value, 'immutable');
+      }
+
+      return evaluate(stmt.block, environment);
+    },
+  };
+};
+
+export const evaluate = (val: Expr | Stmt, environment: Environment): any => {
   switch (val.__kind) {
     case 'binaryExpr': {
-      return evaluateBinaryExpr(val, environment, scope);
+      return evaluateBinaryExpr(val, environment);
     }
     case 'blockExpr': {
-      const scopeUUID = uuidv4();
-      environment.createScope(scopeUUID);
+      const blockEnvironment = new Environment({ enclosingEnv: environment });
 
       let lastValue = null;
       val.statements.forEach((statement) => {
-        lastValue = evaluate(statement, environment, { parentScope: scope, uuid: scopeUUID });
+        lastValue = evaluate(statement, blockEnvironment);
       });
-
-      environment.deleteScope(scopeUUID);
 
       return lastValue;
     }
     case 'expressionStmt': {
-      return evaluate(val.expression, environment, scope);
+      return evaluate(val.expression, environment);
     }
-    case 'funcCallExpr': {
-      const functionVal: { block: BlockExpr; parameterNames: string[] } | null = environment.read(
-        val.name.literal as string,
-        scope,
-      ) as any;
-      if (functionVal === null) {
-        reportError('Function does not exist', {
-          number: val.name.line,
-          string: `Function "${val.name.literal}"`,
+    case 'callExpr': {
+      const callee: Expr = val.callee;
+
+      if (callee.__kind === 'variableExpr') {
+        const args: Literal[] = [];
+
+        val.arguments.forEach((arg: Expr) => {
+          args.push(evaluate(arg, environment));
         });
+
+        const func = environment.get(callee.name) as ReturnType<typeof createFunc>;
+        return func.call(args, callee);
       }
 
-      const parameterNames: string[] = functionVal.parameterNames;
-      const parameterValues = val.arguments.map((expr) => evaluate(expr, environment, scope));
+      const argsArrays: Literal[][] = [];
+      const callees: Expr[] = [];
 
-      if (parameterNames.length !== parameterValues.length) {
-        reportError('Arguments are not matching parameters', {
-          number: val.name.line,
-          string: `Function "${val.name.literal}"`,
+      let currentCallee = val;
+      let index = 0;
+      let shouldLoop = true;
+      while (shouldLoop) {
+        argsArrays[index] = [];
+        currentCallee.arguments.forEach((arg: Expr) => {
+          argsArrays[index].push(evaluate(arg, environment));
         });
-      }
 
-      const args: (FuncDefStmt | LetStmt)[] = parameterNames.map((name, index) => {
-        const value = parameterValues[index];
-        if (value.type === 'function') {
-          return {
-            __kind: 'funcDefStmt',
-            block: value.block,
-            name: { lexeme: name, line: val.name.line, literal: name, type: 'IDENTIFIER' },
-            parameters: value.parameterNames.map((name: string) => ({
-              __kind: 'variableExpr',
-              name: {
-                line: val.name.line,
-                lexeme: name,
-                literal: name,
-                type: 'IDENTIFIER',
-              },
-            })),
-          };
+        // @ts-ignore
+        currentCallee = currentCallee.callee;
+        callees.push(currentCallee);
+        index++;
+        // @ts-ignore
+        if (currentCallee.__kind === 'variableExpr') {
+          shouldLoop = false;
         }
+      }
 
-        return {
-          __kind: 'letStmt',
-          initializer: {
-            __kind: 'literalExpr',
-            value,
-          },
-          name: {
-            lexeme: name,
-            line: val.name.line,
-            literal: name,
-            type: 'IDENTIFIER',
-          },
-        };
+      // @ts-ignore
+      let func = environment.get((currentCallee as VariableExpr).name) as ReturnType<typeof createFunc>;
+      argsArrays.forEach((args, index) => {
+        // @ts-ignore
+        func = func.call(args, callees[index]);
       });
-
-      return evaluate(
-        {
-          __kind: 'blockExpr',
-          statements: [...args, ...functionVal.block.statements],
-        },
-        environment,
-        scope,
-      );
+      return func;
     }
     case 'funcDefStmt': {
-      environment.defineFunction(val, scope);
+      environment.define(val.name.lexeme, createFunc(val, environment), 'immutable');
       return null;
     }
     case 'ifExpr': {
@@ -131,70 +138,46 @@ export const evaluate = (val: Expr | Stmt, environment: Environment, scope: Scop
 
         // Else branch
         if (condition === null) {
-          return evaluate(block, environment, scope);
+          return evaluate(block, environment);
         }
 
-        const evaluatedCondition = evaluate(condition, environment, scope);
+        const evaluatedCondition = evaluate(condition, environment);
         if (isTruthy(evaluatedCondition)) {
-          return evaluate(block, environment, scope);
+          return evaluate(block, environment);
         }
       }
       return null;
     }
     case 'letStmt':
     case 'letMutStmt': {
-      const value = evaluate(val.initializer, environment, scope);
-      if (value.type === 'function') {
-        const fn = {
-          __kind: 'funcDefStmt',
-          block: value.block,
-          name: val.name,
-          parameters: value.parameterNames.map((name: string) => ({
-            __kind: 'variableExpr',
-            name: {
-              lexeme: name,
-              line: val.name.line,
-              literal: name,
-              type: 'IDENTIFIER',
-            },
-          })),
-        };
-
-        // @ts-ignore
-        environment.defineFunction(fn);
-      } else {
-        environment.defineVariable(val, value, scope);
-      }
+      environment.define(
+        val.name.lexeme,
+        evaluate(val.initializer, environment),
+        val.__kind === 'letMutStmt' ? 'mutable' : 'immutable',
+      );
       return null;
     }
     case 'groupingExpr': {
-      return evaluateGroupingExpr(val, environment, scope);
+      return evaluateGroupingExpr(val, environment);
     }
     case 'literalExpr': {
       return evaluateLiteralExpr(val);
     }
     case 'printStmt': {
-      const str = stringify(evaluate(val.expression, environment, scope));
+      const str = stringify(evaluate(val.expression, environment));
       console.log(str);
       return null;
     }
     case 'reassignmentStmt': {
-      environment.mutate(val, evaluate(val.expression, environment, scope), scope);
+      environment.mutate(val.name, evaluate(val.expression, environment));
       return null;
     }
     case 'unaryExpr': {
-      return evaluateUnaryExpr(val, environment, scope);
+      return evaluateUnaryExpr(val, environment);
     }
     case 'variableExpr': {
-      const value = environment.read(val.name.literal as string, scope) ?? null;
-      if (value === null) {
-        reportError('Undefined variable', {
-          number: val.name.line,
-          string: `"${val.name.literal}"`,
-        });
-      }
-
-      return value.type === 'function' ? value : value.value;
+      const value = environment.get(val.name);
+      return value;
     }
   }
 };
@@ -258,11 +241,11 @@ const checkNumberOperands = (operator: Token, left: number | string, right: numb
 
 const evaluateLiteralExpr = (expr: LiteralExpr): Literal => expr.value;
 
-const evaluateGroupingExpr = (expr: GroupingExpr, environment: Environment, scope?: Scope): Expr =>
-  evaluate(expr.expression, environment, scope);
+const evaluateGroupingExpr = (expr: GroupingExpr, environment: Environment): Expr =>
+  evaluate(expr.expression, environment);
 
-const evaluateUnaryExpr = (expr: UnaryExpr, environment: Environment, scope?: Scope): boolean | number | never => {
-  const right = evaluate(expr.right, environment, scope);
+const evaluateUnaryExpr = (expr: UnaryExpr, environment: Environment): boolean | number | never => {
+  const right = evaluate(expr.right, environment);
 
   /* eslint-disable @typescript-eslint/switch-exhaustiveness-check */
   switch (expr.operator.type) {
@@ -277,9 +260,9 @@ const evaluateUnaryExpr = (expr: UnaryExpr, environment: Environment, scope?: Sc
   return null;
 };
 
-const evaluateBinaryExpr = (expr: BinaryExpr, environment: Environment, scope?: Scope): Nullable<Val> | never => {
-  const left = evaluate(expr.left, environment, scope);
-  const right = evaluate(expr.right, environment, scope);
+const evaluateBinaryExpr = (expr: BinaryExpr, environment: Environment): Nullable<Val> | never => {
+  const left = evaluate(expr.left, environment);
+  const right = evaluate(expr.right, environment);
 
   /* eslint-disable @typescript-eslint/switch-exhaustiveness-check */
   switch (expr.operator.type) {

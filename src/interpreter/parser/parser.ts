@@ -10,6 +10,7 @@ import {
   PrintStmt,
   Stmt,
   VariableExpr,
+  CallExpr,
 } from './types';
 import { Token, TokenType } from '../scanner/types';
 
@@ -112,274 +113,6 @@ export class Parser {
 
   private nthPreviousToken = (n: number): Token | null => {
     return this.tokens[this.current - n] ?? null;
-  };
-
-  // Expressions
-  private expression = (): Expr => {
-    const { block, match, pipe } = this;
-
-    const expr = block();
-    if (match('PIPE')) {
-      return pipe(expr);
-    }
-    return expr;
-  };
-
-  private addition = (): Expr => {
-    const { match, multiplication, previous } = this;
-
-    let expr: Expr = multiplication();
-
-    while (match('MINUS', 'PLUS')) {
-      const operator: Token = previous();
-      const right: Expr = multiplication();
-      expr = {
-        __kind: 'binaryExpr',
-        left: expr,
-        operator,
-        right,
-      };
-    }
-
-    return expr;
-  };
-
-  private block = (): Expr => {
-    const { blockExpression, ifExpr } = this;
-
-    const blockExpr = blockExpression();
-
-    return blockExpr === null ? ifExpr() : blockExpr;
-  };
-
-  private blockExpression = (): BlockExpr | null => {
-    const { match, statement } = this;
-
-    if (!match('LEFT_BRACE')) {
-      return null;
-    }
-
-    const statements: Stmt[] = [];
-    while (!match('RIGHT_BRACE')) {
-      statements.push(statement());
-    }
-
-    return {
-      __kind: 'blockExpr',
-      statements,
-    };
-  };
-
-  private comparison = (): Expr => {
-    const { addition, match, previous } = this;
-
-    let expr: Expr = addition();
-
-    while (match('AND', 'GREATER', 'GREATER_EQUAL', 'LESS', 'LESS_EQUAL', 'OR')) {
-      const operator: Token = previous();
-      const right: Expr = addition();
-      expr = { __kind: 'binaryExpr', left: expr, operator, right };
-    }
-
-    return expr;
-  };
-
-  private equality = (): Expr => {
-    const { comparison, match, previous } = this;
-
-    let expr: Expr = comparison();
-
-    while (match('BANG_EQUAL', 'EQUAL_EQUAL')) {
-      const operator: Token = previous();
-      const right: Expr = comparison();
-      expr = { __kind: 'binaryExpr', left: expr, operator, right };
-    }
-
-    return expr;
-  };
-
-  private parseBranch = (shouldParseCondition: boolean): { block: BlockExpr; condition: Expr } => {
-    const { blockExpression, expression } = this;
-
-    const condition: Expr = shouldParseCondition ? expression() : null;
-
-    const block: BlockExpr = blockExpression();
-    if (block === null) {
-      reportError('Expected block after condition');
-    }
-    return { block, condition };
-  };
-
-  private parseIfExpr = (): Expr | never => {
-    const { match, parseBranch, peek } = this;
-
-    const branches = [];
-
-    let shouldLoop = true;
-    while (shouldLoop) {
-      branches.push(parseBranch(true));
-
-      if (peek().type === 'SEMICOLON') {
-        shouldLoop = false;
-      } else if (match('ELSE')) {
-        if (!match('IF')) {
-          branches.push(parseBranch(false));
-          shouldLoop = false;
-        }
-      } else {
-        reportError('Expected ";" or "else" after `if` expression block');
-      }
-    }
-
-    return {
-      __kind: 'ifExpr',
-      branches,
-    };
-  };
-
-  private ifExpr = (): Expr => {
-    const { equality, match, parseIfExpr } = this;
-
-    if (match('IF')) {
-      return parseIfExpr();
-    }
-    return equality();
-  };
-
-  private multiplication = (): Expr => {
-    const { match, previous, unary } = this;
-
-    let expr: Expr = unary();
-
-    while (match('SLASH', 'STAR')) {
-      const operator: Token = previous();
-      const right: Expr = unary();
-      expr = {
-        __kind: 'binaryExpr',
-        left: expr,
-        operator,
-        right,
-      };
-    }
-
-    return expr;
-  };
-
-  private pipe = (firstExpr: Expr): Expr | never => {
-    const { block, match, peek } = this;
-
-    this.pendingExpr.push(firstExpr);
-
-    while (true) {
-      const expr: Expr = block();
-
-      if (peek().type === 'SEMICOLON') {
-        return expr;
-      } else if (match('PIPE')) {
-        this.pendingExpr.push(expr);
-      } else {
-        reportError('Expected ";" or "->"');
-      }
-    }
-  };
-
-  private primary = (): Expr | never => {
-    const { consume, error, expression, match, nthPreviousToken, peek, previous } = this;
-
-    if (match('FALSE')) {
-      return {
-        __kind: 'literalExpr',
-        value: false,
-      };
-    }
-    if (match('TRUE')) {
-      return {
-        __kind: 'literalExpr',
-        value: true,
-      };
-    }
-    if (match('NIL')) {
-      return {
-        __kind: 'literalExpr',
-        value: 'nil',
-      };
-    }
-
-    if (match('NUMBER', 'STRING')) {
-      return {
-        __kind: 'literalExpr',
-        value: previous().literal,
-      };
-    }
-
-    if (match('IDENTIFIER')) {
-      const name = previous();
-
-      if (match('LEFT_PAREN')) {
-        const args: Expr[] = [];
-        if (nthPreviousToken(3)?.type === 'PIPE') {
-          args.push(this.pendingExpr.pop());
-        }
-
-        let shouldLoop = !match('RIGHT_PAREN');
-        while (shouldLoop) {
-          const expr = expression();
-          args.push(expr);
-
-          if (match('RIGHT_PAREN')) {
-            shouldLoop = false;
-          } else {
-            consume('COMMA', 'Expected "," between arguments');
-          }
-        }
-
-        return {
-          __kind: 'funcCallExpr',
-          arguments: args,
-          name,
-        };
-      }
-
-      if (nthPreviousToken(2)?.type === 'PIPE') {
-        return {
-          __kind: 'funcCallExpr',
-          arguments: [this.pendingExpr.pop()],
-          name,
-        };
-      }
-
-      return {
-        __kind: 'variableExpr',
-        name,
-      };
-    }
-
-    if (match('LEFT_PAREN')) {
-      const expr: Expr = expression();
-      consume('RIGHT_PAREN', 'Expected ")" after expression');
-      return {
-        __kind: 'groupingExpr',
-        expression: expr,
-      };
-    }
-
-    error(peek(), 'Expected expression');
-  };
-
-  private unary = (): Expr => {
-    const { match, previous, primary, unary } = this;
-
-    if (match('BANG', 'MINUS')) {
-      const operator: Token = previous();
-      const right: Expr = unary();
-      return {
-        __kind: 'unaryExpr',
-        operator,
-        right,
-      };
-    }
-
-    return primary();
   };
 
   // Statements
@@ -506,5 +239,303 @@ export class Parser {
       initializer,
       name,
     };
+  };
+
+  // Expressions
+  private expression = (): Expr => {
+    const { block, match, pipe } = this;
+
+    const expr = block();
+    if (match('PIPE')) {
+      return pipe(expr);
+    }
+    return expr;
+  };
+
+  private block = (): Expr => {
+    const { blockExpression, ifExpr } = this;
+
+    const blockExpr = blockExpression();
+
+    return blockExpr === null ? ifExpr() : blockExpr;
+  };
+
+  private pipe = (firstExpr: Expr): Expr | never => {
+    const { block, match, peek } = this;
+
+    this.pendingExpr.push(firstExpr);
+
+    while (true) {
+      const expr: Expr = block();
+
+      if (peek().type === 'SEMICOLON') {
+        return expr;
+      } else if (match('PIPE')) {
+        this.pendingExpr.push(expr);
+      } else {
+        reportError('Expected ";" or "->"');
+      }
+    }
+  };
+
+  private blockExpression = (): BlockExpr | null => {
+    const { match, statement } = this;
+
+    if (!match('LEFT_BRACE')) {
+      return null;
+    }
+
+    const statements: Stmt[] = [];
+    while (!match('RIGHT_BRACE')) {
+      statements.push(statement());
+    }
+
+    return {
+      __kind: 'blockExpr',
+      statements,
+    };
+  };
+
+  private call = (): Expr => {
+    const { finishParenCall, match, nthPreviousToken, primary } = this;
+
+    const expr: Expr = primary();
+
+    if (match('LEFT_PAREN')) {
+      return finishParenCall(expr);
+    } else if (nthPreviousToken(2)?.type === 'PIPE') {
+      return {
+        __kind: 'callExpr',
+        arguments: [this.pendingExpr.pop()],
+        callee: expr,
+      };
+    } else {
+      return expr;
+    }
+  };
+
+  private finishParenCall = (callee: Expr): CallExpr => {
+    const { check, consume, expression, match, nthPreviousToken } = this;
+
+    const argsArrays: Expr[][] = [];
+
+    let index = 0;
+    let shouldLoop = true;
+    while (shouldLoop) {
+      argsArrays[index] = [];
+      // For example: 10 -> add(20)
+      if (nthPreviousToken(3)?.type === 'PIPE') {
+        argsArrays[index].push(this.pendingExpr.pop());
+      }
+
+      if (!check('RIGHT_PAREN')) {
+        do {
+          argsArrays[index].push(expression());
+        } while (match('COMMA'));
+      }
+
+      index++;
+
+      consume('RIGHT_PAREN', 'Expect ")" after arguments.');
+      if (!match('LEFT_PAREN')) {
+        shouldLoop = false;
+      }
+    }
+
+    const callExpr = {} as CallExpr;
+    let currentNode: CallExpr = callExpr;
+    argsArrays.forEach((argsArray, index) => {
+      currentNode['__kind'] = 'callExpr';
+      currentNode.arguments = argsArray;
+      currentNode.callee = {} as CallExpr;
+
+      if (index === argsArrays.length - 1) {
+        currentNode.callee = callee;
+      } else {
+        currentNode = currentNode.callee;
+      }
+    });
+
+    return callExpr;
+  };
+
+  private equality = (): Expr => {
+    const { comparison, match, previous } = this;
+
+    let expr: Expr = comparison();
+
+    while (match('BANG_EQUAL', 'EQUAL_EQUAL')) {
+      const operator: Token = previous();
+      const right: Expr = comparison();
+      expr = { __kind: 'binaryExpr', left: expr, operator, right };
+    }
+
+    return expr;
+  };
+
+  private comparison = (): Expr => {
+    const { addition, match, previous } = this;
+
+    let expr: Expr = addition();
+
+    while (match('AND', 'GREATER', 'GREATER_EQUAL', 'LESS', 'LESS_EQUAL', 'OR')) {
+      const operator: Token = previous();
+      const right: Expr = addition();
+      expr = { __kind: 'binaryExpr', left: expr, operator, right };
+    }
+
+    return expr;
+  };
+
+  private addition = (): Expr => {
+    const { match, multiplication, previous } = this;
+
+    let expr: Expr = multiplication();
+
+    while (match('MINUS', 'PLUS')) {
+      const operator: Token = previous();
+      const right: Expr = multiplication();
+      expr = {
+        __kind: 'binaryExpr',
+        left: expr,
+        operator,
+        right,
+      };
+    }
+
+    return expr;
+  };
+
+  private parseBranch = (shouldParseCondition: boolean): { block: BlockExpr; condition: Expr } => {
+    const { blockExpression, expression } = this;
+
+    const condition: Expr = shouldParseCondition ? expression() : null;
+
+    const block: BlockExpr = blockExpression();
+    if (block === null) {
+      reportError('Expected block after condition');
+    }
+    return { block, condition };
+  };
+
+  private parseIfExpr = (): Expr | never => {
+    const { match, parseBranch, peek } = this;
+
+    const branches = [];
+
+    let shouldLoop = true;
+    while (shouldLoop) {
+      branches.push(parseBranch(true));
+
+      if (peek().type === 'SEMICOLON') {
+        shouldLoop = false;
+      } else if (match('ELSE')) {
+        if (!match('IF')) {
+          branches.push(parseBranch(false));
+          shouldLoop = false;
+        }
+      } else {
+        reportError('Expected ";" or "else" after `if` expression block');
+      }
+    }
+
+    return {
+      __kind: 'ifExpr',
+      branches,
+    };
+  };
+
+  private ifExpr = (): Expr => {
+    const { equality, match, parseIfExpr } = this;
+
+    if (match('IF')) {
+      return parseIfExpr();
+    }
+    return equality();
+  };
+
+  private multiplication = (): Expr => {
+    const { match, previous, unary } = this;
+
+    let expr: Expr = unary();
+
+    while (match('SLASH', 'STAR')) {
+      const operator: Token = previous();
+      const right: Expr = unary();
+      expr = {
+        __kind: 'binaryExpr',
+        left: expr,
+        operator,
+        right,
+      };
+    }
+
+    return expr;
+  };
+
+  private unary = (): Expr => {
+    const { call, match, previous, unary } = this;
+
+    if (match('BANG', 'MINUS')) {
+      const operator: Token = previous();
+      const right: Expr = unary();
+      return {
+        __kind: 'unaryExpr',
+        operator,
+        right,
+      };
+    }
+
+    return call();
+  };
+
+  private primary = (): Expr | never => {
+    const { consume, error, expression, match, peek, previous } = this;
+
+    if (match('FALSE')) {
+      return {
+        __kind: 'literalExpr',
+        value: false,
+      };
+    }
+    if (match('TRUE')) {
+      return {
+        __kind: 'literalExpr',
+        value: true,
+      };
+    }
+    if (match('NIL')) {
+      return {
+        __kind: 'literalExpr',
+        value: 'nil',
+      };
+    }
+
+    if (match('NUMBER', 'STRING')) {
+      return {
+        __kind: 'literalExpr',
+        value: previous().literal,
+      };
+    }
+
+    if (match('IDENTIFIER')) {
+      const name = previous();
+
+      return {
+        __kind: 'variableExpr',
+        name,
+      };
+    }
+
+    if (match('LEFT_PAREN')) {
+      const expr: Expr = expression();
+      consume('RIGHT_PAREN', 'Expected ")" after expression');
+      return {
+        __kind: 'groupingExpr',
+        expression: expr,
+      };
+    }
+
+    error(peek(), 'Expected expression');
   };
 }
