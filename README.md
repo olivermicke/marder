@@ -2,7 +2,7 @@
 
 ## General
 
-Marder is a language built for educational purposes only. Therefore, it's always in development and may change a lot over time. Currently, Marder is dynamically typed and its interpreter is written in TypeScript.
+Marder (ˈmaʁdɐ, engl. "marten") is a language built for educational purposes only. Marder is dynamically typed and its interpreter is written in TypeScript. In its current form, it is quite primitive. Literally. There are no arrays or objects. Just primitive data types. However, it supports recursion and even closures, so it's possible to write some simple programs such as calculating a Fibonacci sequence. Marder source code files require the `.mad` file extension.
 
 ## Examples
 
@@ -22,29 +22,33 @@ Marder is a language built for educational purposes only. Therefore, it's always
       };
     };
 
-    print fibonacci(7); // Prints `13`
+    print fibonacci(7); // Prints "13"
 
-## Overview
+## How to use
+
+- Create a file called `hello-world.mad` with `print "Hello, world!";` as content
+- Run `yarn` and `yarn build`
+- Run `yarn mad ./hello-world.mad` where the given file path points to your `.mad` file
+
+## Syntax
 
 Marder requires a semicolon after every statement.
 
-### Keywords
-
-TODO:
-
 ### Truthiness
 
-`false` and `nil` are not truthy. Every other expression is truthy.
+`false` and `nil` are falsy. Every other expression is truthy.
 
 ### Operators
 
-Instead of `||` and `&&`, `or` and `and` are used. Currently, both expressions inside both respective operators are evaluated no matter if the first expression is truthy/falsy. This will be changed with future versions.
+Instead of `||` and `&&`, `or` and `and` are used.
+
+⚠️ Currently, short-circuit evaluation is not supported.
 
     func foo() {
       print "called foo";
     };
 
-    false and foo(); // Current behaviour: `called foo` is printed
+    false and foo(); // ⚠️ Current behaviour: `called foo` is printed
 
 ### Variables
 
@@ -64,7 +68,7 @@ Variables have to be declared and initialized at the same time.
 
 ### Blocks
 
-Blocks are wrapped by braces. While they have their own scope, they can read and mutate their parents' scope (including global scope). Local scope has precedence over parent/global scope when a variable name is ambigious.
+Blocks are wrapped by braces. While they have their own scope, they can read and mutate their parents' scope (including global scope). Local scope has precedence over parent/global scope when referring to an ambiguous variable name.
 
     {
       let foo = "outer scope";
@@ -75,11 +79,11 @@ Blocks are wrapped by braces. While they have their own scope, they can read and
       };
     };
 
-Blocks implicitly return the value of their last statement.
+Blocks implicitly return the value of their last statement. Consequently, implicit returns for functions as well as if-else expressions are possible.
 
 ### Functions
 
-Function blocks implicitly return the value of their last statement. While functions are first-class citizens, closures are not supported yet.
+Functions are first-class citizens. Just like regular blocks, function blocks implicitly return the value of their last statement.
 
 #### Declaring functions
 
@@ -171,3 +175,23 @@ When assigning an if expression which never returns a value to a variable, an er
     } else {
       "bar";
     };
+
+#### Reserved Keywords
+
+- `and`
+- `class` (not implemented yet)
+- `else`
+- `false`
+- `for` (not implemented yet)
+- `func`
+- `if`
+- `let`
+- `mut`
+- `nil`
+- `or`
+- `print`
+- `return`
+- `super` (not implemented yet)
+- `this` (not implemented yet)
+- `true`
+- `while`
