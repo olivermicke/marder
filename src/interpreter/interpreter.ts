@@ -1,6 +1,7 @@
 import { reportError } from '../utils/report-error';
 
 import { Environment } from './environment';
+import { globalEnvironment } from './environment.global';
 import {
   BinaryExpr,
   Expr,
@@ -20,7 +21,7 @@ type Val = boolean | number | string | 'nil' | 'true' | 'false';
 
 export const interpret = (statements: Stmt[]): void | never => {
   try {
-    const environment = new Environment({ enclosingEnv: null });
+    const environment = new Environment({ enclosingEnv: globalEnvironment });
 
     statements.forEach((statement: Stmt): void => {
       evaluate(statement, environment);
@@ -182,7 +183,7 @@ export const evaluate = (val: Expr | Stmt, environment: Environment): any => {
   }
 };
 
-const stringify = (object: Nullable<Val>): string => {
+export const stringify = (object: Nullable<Val>): string => {
   if (object === null) {
     return 'nil';
   }

@@ -97,6 +97,8 @@ Functions are first-class citizens. Just like regular blocks, function blocks im
 
 Functions can be called with parens or with the pipe operator `->`
 
+There are two ways values can be logged to the console: calling `print` or `log`. While `print` is a keyword, `log` is a built-in function. Examples for both can be seen below.
+
     func double(n) {
       n * 2;
     };
@@ -105,8 +107,11 @@ Functions can be called with parens or with the pipe operator `->`
       x - y;
     };
 
+    print double(5); // Prints `10`
+    5 -> double -> log; // Prints `10`
+
     print subtract(double(5), 8); // Prints `2`
-    print 5 -> double -> subtract(8); // Prints `2`
+    5 -> double -> subtract(8) -> log; // Prints `2`
 
 #### First-class citizens
 
