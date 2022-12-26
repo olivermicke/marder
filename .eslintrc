@@ -1,10 +1,5 @@
 {
-  "extends": [
-    "eslint:recommended",
-    "plugin:@typescript-eslint/recommended",
-    "plugin:node/recommended",
-    "prettier/@typescript-eslint"
-  ],
+  "extends": ["eslint:recommended", "plugin:@typescript-eslint/recommended", "plugin:node/recommended", "prettier"],
   "plugins": ["@typescript-eslint", "node", "prettier"],
   "env": {
     "jasmine": true,
@@ -12,7 +7,7 @@
     "node": true
   },
   "rules": {
-    "@typescript-eslint/ban-ts-ignore": "off",
+    "@typescript-eslint/ban-ts-comment": "off",
     "@typescript-eslint/no-explicit-any": "off",
     "@typescript-eslint/no-use-before-define": "off",
     "@typescript-eslint/switch-exhaustiveness-check": "error",
